@@ -1,34 +1,36 @@
 @import "tailwindcss";
 
 @theme {
-  --color-night: #100e0c;
-  --color-night-elevated: #1a1612;
-  --color-night-subtle: #241e18;
-  --color-cream: #f3ece2;
-  --color-cream-muted: #b8a99a;
-  --color-cream-subtle: #8a7b6c;
-  --color-vermillion: #c45c3e;
-  --color-vermillion-deep: #9a3f28;
-  --color-sacred: #d4b483;
-  --color-border: rgb(243 236 226 / 0.12);
-  --color-border-strong: rgb(243 236 226 / 0.22);
+  --color-peach: #fff6e8;
+  --color-blush: #ffe8f0;
+  --color-sky: #e8f4ff;
+  --color-paper: #fffdfb;
+  --color-ink: #3a2f4a;
+  --color-mist: #7a6a88;
+  --color-coral: #ff7a5c;
+  --color-coral-soft: #ffb8a0;
+  --color-coral-deep: #e04a30;
+  --color-gold: #f0b040;
+  --color-gold-soft: #ffe0a0;
+  --color-border: rgb(255 122 92 / 0.22);
+  --color-border-strong: rgb(255 122 92 / 0.4);
 
-  --font-display: "Cinzel", ui-serif, Georgia, serif;
-  --font-dev: "Noto Sans Devanagari", "Nunito", system-ui, sans-serif;
+  --font-display: "Baloo 2", "Noto Sans Devanagari", system-ui, sans-serif;
+  --font-dev: "Noto Sans Devanagari", "Baloo 2", system-ui, sans-serif;
   --font-sans: "Nunito", "Noto Sans Devanagari", system-ui, sans-serif;
 
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
-  --radius-lg: 1rem;
+  --radius-lg: 1.125rem;
   --radius-xl: 1.5rem;
 
   --shadow-panel:
-    0 0 0 1px rgb(243 236 226 / 0.08),
-    0 18px 40px -24px rgb(0 0 0 / 0.7);
+    0 0 0 2px rgb(255 184 160 / 0.35),
+    0 10px 28px -12px rgb(255 122 92 / 0.28);
 }
 
-.sanctum-wash {
-  background-image: url("/deities/sanctum.webp");
+.pastel-wash {
+  background: linear-gradient(165deg, var(--color-peach), var(--color-blush) 46%, var(--color-sky));
 }
 
 @layer base {
@@ -46,8 +48,8 @@
 
   body {
     margin: 0;
-    background: var(--color-night);
-    color: var(--color-cream);
+    background: var(--color-peach);
+    color: var(--color-ink);
     font-family: var(--font-sans);
   }
 

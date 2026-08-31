@@ -18,9 +18,9 @@ export const Route = createRootRoute({
       {
         name: "description",
         content:
-          "Aradhana — the inner temple. Japa, path, manas puja, and a living murti.",
+          "Aradhana — a pastel inner temple. Japa, Vedic Vāṇī, and a living murti with puja.",
       },
-      { name: "theme-color", content: "#100e0c" },
+      { name: "theme-color", content: "#fff6e8" },
     ],
     links: [
       { rel: "icon", type: "image/svg+xml", href: "/favicon.svg" },
@@ -31,7 +31,7 @@ export const Route = createRootRoute({
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Sans+Devanagari:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Noto+Sans+Devanagari:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&display=swap",
       },
     ],
   }),

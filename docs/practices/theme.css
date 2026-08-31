@@ -1,0 +1,118 @@
+/* Aradhana house theme — shared by Japa, Vāṇī, Murti */
+:root {
+  --bg1: #fff6e8;
+  --bg2: #ffe8f0;
+  --bg3: #e8f4ff;
+  --paper: #fffdfb;
+  --ink: #3a2f4a;
+  --mist: rgba(58, 47, 74, 0.58);
+  --coral: #ff7a5c;
+  --coral-soft: #ffb8a0;
+  --coral-deep: #e04a30;
+  --gold: #f0b040;
+  --gold-soft: #ffe0a0;
+  --accent: #ff7a5c;
+  --accent-soft: #ffb8a0;
+  --accent-deep: #e04a30;
+  --ui: "Nunito", system-ui, sans-serif;
+  --dev: "Noto Sans Devanagari", "Baloo 2", sans-serif;
+  --display: "Baloo 2", "Noto Sans Devanagari", sans-serif;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
+  --shadow: 0 10px 28px -12px color-mix(in srgb, var(--coral) 28%, transparent);
+  --border: 2px solid color-mix(in srgb, var(--coral-soft) 50%, transparent);
+  --safe-top: max(12px, env(safe-area-inset-top));
+  --safe-bot: max(12px, env(safe-area-inset-bottom));
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  height: 100%;
+  font-family: var(--ui);
+  color: var(--ink);
+  background: linear-gradient(165deg, var(--bg1), var(--bg2) 46%, var(--bg3));
+  -webkit-font-smoothing: antialiased;
+}
+
+button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
+
+.kicker {
+  font-family: var(--dev);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: var(--mist);
+  text-align: center;
+  margin: 0;
+}
+
+.lede {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--mist);
+  text-align: center;
+  margin: 0 auto 18px;
+  line-height: 1.5;
+  max-width: 340px;
+}
+
+.card {
+  background: rgba(255, 253, 251, 0.88);
+  backdrop-filter: blur(12px);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  margin-bottom: 12px;
+  border: var(--border);
+  box-shadow: var(--shadow);
+}
+
+.lbl, .card-title {
+  display: block;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mist);
+  margin: 0 0 7px;
+}
+
+.start, .start-btn, .primary-btn {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 15px;
+  border: none;
+  border-radius: 16px;
+  font-family: var(--dev);
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--coral);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--coral) 32%, transparent);
+}
+
+.start:not(:disabled):active,
+.start-btn:not(:disabled):active,
+.primary-btn:not(:disabled):active {
+  transform: scale(0.98);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

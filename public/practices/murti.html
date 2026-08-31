@@ -3,593 +3,615 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
-<title>Murti · Living Deity · Aradhana</title>
+<title>Murti · मूर्ति पूजा · Aradhana</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Sans+Devanagari:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Noto+Sans+Devanagari:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./theme.css">
 <style>
-  :root{
-    --night:#100e0c; --elev:#1a1612; --subtle:#241e18;
-    --cream:#f3ece2; --muted:#b8a99a; --dim:#8a7b6c;
-    --verm:#c45c3e; --verm-deep:#9a3f28; --sacred:#d4b483;
-    --aura:#d4b483;
-    --safe-top:max(12px, env(safe-area-inset-top));
-    --safe-bot:max(12px, env(safe-area-inset-bottom));
-    --ui:'Nunito', system-ui, sans-serif;
-    --dev:'Noto Sans Devanagari', 'Nunito', sans-serif;
-    --display:'Cinzel', serif;
-  }
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0;height:100%;background:var(--night);color:var(--cream);font-family:var(--ui);overflow:hidden;}
-  #app{position:relative;width:100%;height:100%;height:100dvh;overflow:hidden;}
+  html, body { overflow: hidden; }
+  #app { position: relative; width: 100%; height: 100%; height: 100dvh; overflow: hidden; }
 
-  /* ===== Chooser ===== */
-  #chooser{
-    position:absolute; inset:0; z-index:30;
-    display:flex; flex-direction:column;
-    background:radial-gradient(120% 80% at 50% 0%, #2a1c14, var(--night) 62%);
+  #chooser, #variants {
+    position: absolute; inset: 0; z-index: 30; overflow-y: auto;
     padding: var(--safe-top) 16px calc(var(--safe-bot) + 8px);
-    overflow-y:auto; -webkit-overflow-scrolling:touch;
   }
-  #chooser.hidden{display:none;}
-  .ch-kicker{font-family:var(--dev); font-size:12px; font-weight:700; letter-spacing:.22em; color:var(--muted); text-align:center; margin:10px 0 2px;}
-  .ch-title{font-family:var(--display); font-size:28px; font-weight:600; text-align:center; margin:0 0 4px; letter-spacing:-.02em;}
-  .ch-sub{font-size:13px; color:var(--muted); text-align:center; margin:0 0 16px; line-height:1.5;}
-  .grid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:520px; margin:0 auto; width:100%;}
-  .tile{
-    position:relative; aspect-ratio:2/3; border-radius:14px; overflow:hidden;
-    border:1px solid rgba(243,236,226,.12); cursor:pointer; background:var(--elev);
-    padding:0; color:inherit;
-    transition:transform .15s ease-out, border-color .15s;
+  #chooser.hidden, #variants.hidden { display: none; }
+  h1 {
+    font-family: var(--dev); font-size: 28px; font-weight: 800; text-align: center;
+    margin: 4px 0 6px; color: var(--coral-deep);
   }
-  .tile:hover{border-color:rgba(243,236,226,.28);}
-  .tile:active{transform:scale(.96);}
-  .tile img{width:100%; height:100%; object-fit:cover; object-position:center top; display:block;}
-  .tile span{
-    position:absolute; left:0; right:0; bottom:0; padding:18px 6px 8px;
-    background:linear-gradient(to top, rgba(16,14,12,.92), transparent);
-    font-family:var(--dev); font-size:12px; font-weight:700; text-align:center;
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 520px; margin: 0 auto; width: 100%; }
+  .tile {
+    position: relative; aspect-ratio: 2/3; border-radius: 16px; overflow: hidden; padding: 0;
+    border: var(--border); background: #fff; box-shadow: var(--shadow); color: inherit;
   }
-  .upload-tile{
-    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
-    border:1px dashed rgba(243,236,226,.28); background:rgba(243,236,226,.03);
+  .tile:active { transform: scale(0.96); }
+  .tile img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
+  .tile .cap {
+    position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 6px 8px; text-align: center;
+    background: linear-gradient(to top, rgba(58,47,74,0.72), transparent);
+    color: #fff;
   }
-  .upload-tile .plus{font-family:var(--display); font-size:28px; color:var(--sacred); line-height:1;}
-  .upload-tile .lbl{font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--muted);}
-  .visually-hidden{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);border:0;}
-
-  /* ===== Stage ===== */
-  #stage{position:absolute; inset:0; overflow:hidden; background:var(--night);}
-  #bg{
-    position:absolute; inset:0;
-    background:
-      radial-gradient(ellipse 70% 50% at 50% 18%, color-mix(in srgb, var(--aura) 22%, transparent), transparent 60%),
-      radial-gradient(ellipse 90% 80% at 50% 100%, #1c140e, var(--night) 70%);
-    transition: background .6s ease;
-  }
-  #bg.has-custom{background:#050403;}
-  #bg img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; opacity:.38; filter:saturate(.7) brightness(.55);}
-
-  #yantra{
-    position:absolute; left:50%; top:46%; width:min(88vw, 420px); aspect-ratio:1;
-    transform:translate(-50%,-50%); pointer-events:none; opacity:.16;
-    animation:spinYantra 48s linear infinite;
-  }
-  @keyframes spinYantra{to{transform:translate(-50%,-50%) rotate(360deg);}}
-  body.rite-cosmic #yantra{opacity:.42;}
-
-  #aura{
-    position:absolute; left:50%; top:46%; width:min(78vw, 360px); height:min(88vw, 420px);
-    transform:translate(-50%,-50%);
-    border-radius:50%;
-    background:radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--aura) 55%, transparent), transparent 68%);
-    filter:blur(18px); pointer-events:none;
-    animation:auraPulse 4.4s ease-in-out infinite;
-    opacity:.85;
-  }
-  @keyframes auraPulse{
-    0%,100%{transform:translate(-50%,-50%) scale(1); opacity:.7;}
-    50%{transform:translate(-50%,-50%) scale(1.08); opacity:1;}
-  }
-  #aura.burst{animation:auraBurst .9s ease-out;}
-  @keyframes auraBurst{
-    0%{transform:translate(-50%,-50%) scale(.92); opacity:.4;}
-    35%{transform:translate(-50%,-50%) scale(1.28); opacity:1;}
-    100%{transform:translate(-50%,-50%) scale(1.05); opacity:.75;}
+  .tile .cap .hi { display: block; font-family: var(--dev); font-size: 13px; font-weight: 800; }
+  .tile .cap .en { display: block; font-size: 10px; font-weight: 700; opacity: 0.9; }
+  .upload-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border-style: dashed; background: rgba(255,255,255,0.65); }
+  .upload-tile .plus { font-family: var(--dev); font-size: 28px; color: var(--coral); line-height: 1; }
+  .back {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 13px; font-weight: 800; color: var(--coral-deep);
+    background: rgba(255,253,251,0.9); border: var(--border); border-radius: 999px;
+    padding: 8px 14px; margin: 4px 0 8px;
   }
 
-  #murtiWrap{
-    position:absolute; left:50%; top:46%;
-    transform:translate(-50%,-50%);
-    width:min(78vw, 340px); height:min(112vw, 520px);
-    cursor:pointer; user-select:none; -webkit-user-select:none;
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+  #aura {
+    position: absolute; left: 50%; top: 28%; width: min(78vw, 340px); height: min(70vw, 320px);
+    transform: translate(-50%, -50%); border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--aura, #ffd080) 70%, white), transparent 68%);
+    filter: blur(16px); animation: pulse 4.4s ease-in-out infinite;
   }
-  #murtiWrap.alive{animation:breathe 4.8s ease-in-out infinite;}
-  @keyframes breathe{
-    0%,100%{transform:translate(-50%,-50%) scale(1);}
-    50%{transform:translate(-50%,-50%) scale(1.018);}
+  @keyframes pulse {
+    0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 0.7; }
+    50% { transform: translate(-50%, -50%) scale(1.08); opacity: 1; }
   }
-  #murtiWrap.awake{animation:awaken .7s cubic-bezier(.22,1,.36,1);}
-  @keyframes awaken{
-    0%{transform:translate(-50%,-50%) scale(1);}
-    40%{transform:translate(-50%,-50%) scale(1.045);}
-    100%{transform:translate(-50%,-50%) scale(1);}
-  }
-  #murtiImg{
-    width:100%; height:100%; object-fit:contain; object-position:center bottom;
-    filter:drop-shadow(0 18px 40px rgba(0,0,0,.55));
-    pointer-events:none;
-    transition:filter .4s ease;
-  }
-  #murtiWrap.awake #murtiImg{
-    filter:drop-shadow(0 18px 40px rgba(0,0,0,.55)) brightness(1.18) saturate(1.12);
+  #aura.burst { animation: burst 0.9s ease-out; }
+  @keyframes burst {
+    0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.4; }
+    40% { transform: translate(-50%, -50%) scale(1.26); opacity: 1; }
+    100% { transform: translate(-50%, -50%) scale(1); opacity: 0.75; }
   }
 
-  #rays{
-    position:absolute; left:50%; top:46%; width:min(120vw, 640px); height:min(120vw, 640px);
-    transform:translate(-50%,-50%); pointer-events:none; opacity:0;
-    background:conic-gradient(from 0deg, transparent 0 8%, color-mix(in srgb, var(--aura) 28%, transparent) 9% 11%, transparent 12% 24%);
-    mix-blend-mode:screen; filter:blur(2px);
-  }
-  #rays.show{animation:raySpin 1.6s ease-out forwards;}
-  @keyframes raySpin{
-    0%{opacity:0; transform:translate(-50%,-50%) rotate(0) scale(.8);}
-    30%{opacity:.7;}
-    100%{opacity:0; transform:translate(-50%,-50%) rotate(50deg) scale(1.15);}
+  #arch {
+    position: absolute; left: 50%; top: 4%; transform: translateX(-50%);
+    width: min(72vw, 300px); height: min(48vh, 340px);
+    border: 3px solid color-mix(in srgb, var(--gold) 50%, white);
+    border-bottom: none; border-radius: 170px 170px 18px 18px;
+    pointer-events: none; z-index: 2;
+    box-shadow: 0 0 36px color-mix(in srgb, var(--gold) 22%, transparent);
   }
 
-  #fx{position:absolute; inset:0; pointer-events:none; overflow:hidden;}
-  .petal,.spark,.note,.drop{
-    position:absolute; pointer-events:none; will-change:transform, opacity;
+  #murtiWrap {
+    position: absolute; left: 50%; top: 6%; transform: translateX(-50%);
+    width: min(62vw, 260px); height: min(46vh, 320px);
+    cursor: pointer; user-select: none; z-index: 3;
   }
-  .petal{font-size:18px; animation:petalFall linear forwards;}
-  @keyframes petalFall{
-    0%{transform:translate3d(0,-8vh,0) rotate(0); opacity:0;}
-    8%{opacity:1;}
-    100%{transform:translate3d(var(--sway), 110vh, 0) rotate(var(--spin)); opacity:.15;}
+  #murtiWrap.alive { animation: breathe 4.8s ease-in-out infinite; }
+  @keyframes breathe {
+    0%, 100% { transform: translateX(-50%) scale(1); }
+    50% { transform: translateX(-50%) scale(1.018); }
   }
-  .spark{
-    width:5px; height:5px; border-radius:50%;
-    background:var(--aura); box-shadow:0 0 8px 2px var(--aura);
-    animation:sparkOut .9s ease-out forwards;
+  #murtiWrap.awake { animation: awaken 0.7s cubic-bezier(0.34, 1.56, 0.64, 1); }
+  @keyframes awaken {
+    0% { transform: translateX(-50%) scale(1); }
+    40% { transform: translateX(-50%) scale(1.05); }
+    100% { transform: translateX(-50%) scale(1); }
   }
-  @keyframes sparkOut{
-    0%{transform:translate(-50%,-50%) scale(1); opacity:1;}
-    100%{transform:translate(var(--dx), var(--dy)) scale(.1); opacity:0;}
-  }
-  .om-flash{
-    position:absolute; left:50%; top:18%; transform:translate(-50%,-50%);
-    font-family:var(--dev); font-size:42px; font-weight:800; color:var(--sacred);
-    text-shadow:0 0 24px color-mix(in srgb, var(--aura) 70%, transparent);
-    animation:omIn 1.2s ease forwards; pointer-events:none;
-  }
-  @keyframes omIn{
-    0%{opacity:0; transform:translate(-50%,-40%) scale(.8);}
-    35%{opacity:1; transform:translate(-50%,-50%) scale(1);}
-    100%{opacity:0; transform:translate(-50%,-62%) scale(1.08);}
-  }
-  .diya{
-    position:absolute; font-size:28px; pointer-events:none;
-    animation:aarti 2.2s ease-in-out forwards;
-  }
-  @keyframes aarti{
-    0%{transform:translate(-50%,-50%) rotate(-24deg); opacity:0;}
-    15%{opacity:1;}
-    50%{transform:translate(-50%,-50%) rotate(24deg);}
-    100%{transform:translate(-50%,-50%) rotate(-8deg); opacity:0;}
+  #murtiImg {
+    width: 100%; height: 100%; object-fit: contain; object-position: center bottom;
+    filter: drop-shadow(0 16px 28px rgba(58,47,74,0.22));
   }
 
-  #hint{
-    position:absolute; left:50%; bottom: calc(118px + var(--safe-bot));
-    transform:translateX(-50%);
-    font-size:12px; font-weight:600; color:var(--muted); letter-spacing:.04em;
-    text-align:center; pointer-events:none; white-space:nowrap;
-    transition:opacity .4s;
+  #mantraBar {
+    position: static; width: auto; transform: none;
+    text-align: center; z-index: 5; margin: 0;
   }
-  #hint.fade{opacity:0;}
+  #mantraHi {
+    font-family: var(--dev); font-weight: 800; font-size: clamp(15px, 4.4vw, 21px);
+    color: var(--coral-deep); margin: 0; cursor: pointer;
+    padding: 8px 14px; border-radius: 999px;
+    background: rgba(255,253,251,0.86); border: var(--border); display: inline-block;
+  }
+  #mantraEn { font-size: 11.5px; font-weight: 700; color: var(--mist); margin: 6px 0 0; }
 
-  /* ===== Dock ===== */
-  #dock{
-    position:absolute; left:0; right:0; bottom:0; z-index:12;
-    padding: 8px 12px calc(var(--safe-bot) + 8px);
-    background:linear-gradient(to top, rgba(16,14,12,.92) 40%, transparent);
+  #liturgy {
+    position: absolute; left: 0; right: 0;
+    bottom: calc(132px + var(--safe-bot));
+    z-index: 6; text-align: center; padding: 0 16px;
+    pointer-events: none;
   }
-  .rites{display:flex; gap:6px; overflow-x:auto; padding-bottom:8px; scrollbar-width:none;}
-  .rites::-webkit-scrollbar{display:none;}
-  .rite{
-    flex:0 0 auto; font-family:var(--ui); font-size:11.5px; font-weight:700;
-    padding:8px 12px; border-radius:999px; cursor:pointer;
-    border:1px solid rgba(243,236,226,.16);
-    background:rgba(26,22,18,.8); color:var(--muted);
-    transition: background .15s, color .15s, border-color .15s;
+  #liturgy #mantraHi { pointer-events: auto; }
+  #caption { position: static; padding: 8px 0 0; }
+  #caption .hi { font-family: var(--dev); font-size: 16px; font-weight: 800; color: var(--coral-deep); margin: 0; }
+  #caption .en { font-size: 12px; font-weight: 700; color: var(--mist); margin: 2px 0 0; }
+  #track {
+    width: min(240px, 70vw); height: 5px; margin: 8px auto 0; border-radius: 99px;
+    background: rgba(58,47,74,0.1); overflow: hidden;
   }
-  .rite.active{background:var(--cream); color:var(--night); border-color:var(--cream);}
-  .tools{display:flex; gap:8px;}
-  .tool{
-    flex:1; font-family:var(--ui); font-size:12px; font-weight:700;
-    padding:10px 8px; border-radius:12px; cursor:pointer;
-    border:1px solid rgba(243,236,226,.14);
-    background:rgba(26,22,18,.88); color:var(--cream);
-  }
-  .tool:active{transform:scale(.96);}
+  #fill { height: 100%; width: 0; background: var(--coral); border-radius: 99px; transition: width 0.4s; }
 
-  /* ===== Sheet ===== */
-  #sheetBg{
-    position:absolute; inset:0; z-index:40; background:rgba(6,5,4,.55);
-    opacity:0; pointer-events:none; transition:opacity .3s;
+  #fx { position: absolute; inset: 0; pointer-events: none; z-index: 8; overflow: hidden; }
+  .petal, .spark, .drop, .om-flash, .flame, .mark, .smoke {
+    position: absolute; pointer-events: none;
   }
-  #sheetBg.show{opacity:1; pointer-events:auto;}
-  #sheet{
-    position:absolute; left:0; right:0; bottom:0; z-index:41;
-    max-height:78vh; overflow-y:auto;
-    background:var(--elev); border-radius:20px 20px 0 0;
-    border-top:1px solid rgba(243,236,226,.12);
-    padding:14px 16px calc(var(--safe-bot) + 16px);
-    transform:translateY(110%); transition:transform .35s cubic-bezier(.3,.9,.3,1);
+  .petal {
+    width: 14px; height: 18px; border-radius: 80% 0 80% 0;
+    background: var(--petal, #ffb8a0);
+    animation: fall linear forwards;
   }
-  #sheetBg.show #sheet{transform:translateY(0);}
-  .handle{width:36px; height:4px; border-radius:2px; background:rgba(243,236,226,.22); margin:0 auto 12px;}
-  .sheet-h{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;}
-  .sheet-h h2{font-family:var(--display); font-size:20px; font-weight:600; margin:0;}
-  .xbtn{width:32px; height:32px; border-radius:50%; border:1px solid rgba(243,236,226,.16); background:transparent; color:var(--cream); font-size:16px; cursor:pointer;}
-  .sec{margin-top:16px;}
-  .sec-l{font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--dim); margin-bottom:8px; font-weight:700;}
-  .swatches{display:flex; flex-wrap:wrap; gap:8px;}
-  .sw{
-    width:32px; height:32px; border-radius:50%; border:2px solid rgba(255,255,255,.2); cursor:pointer; padding:0;
+  @keyframes fall {
+    0% { transform: translate3d(0, -6vh, 0) rotate(0); opacity: 0; }
+    10% { opacity: 1; }
+    100% { transform: translate3d(var(--sway), 110vh, 0) rotate(var(--spin)); opacity: 0.15; }
   }
-  .sw.active{box-shadow:0 0 0 2px var(--night), 0 0 0 4px var(--cream);}
-  .row{display:flex; align-items:center; justify-content:space-between; gap:12px; margin-top:10px;}
-  .row span{font-size:13px; font-weight:600;}
-  input[type=range]{width:100%; accent-color:var(--verm);}
-  .tog{
-    width:44px; height:26px; border-radius:999px; border:0; background:rgba(243,236,226,.16); position:relative; cursor:pointer;
+  .spark {
+    width: 6px; height: 6px; border-radius: 50%; background: var(--gold);
+    box-shadow: 0 0 8px 2px var(--gold); animation: spark 0.9s ease-out forwards;
   }
-  .tog.on{background:var(--verm);}
-  .tog i{position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%; background:#fff; transition:transform .2s;}
-  .tog.on i{transform:translateX(18px);}
+  @keyframes spark { to { transform: translate(var(--dx), var(--dy)) scale(0.1); opacity: 0; } }
+  .drop { width: 5px; border-radius: 99px; animation: drip 0.8s ease-in forwards; }
+  @keyframes drip { to { transform: translateY(90px); opacity: 0; } }
+  .om-flash {
+    left: 50%; top: 16%; transform: translate(-50%, -50%);
+    font-family: var(--dev); font-size: 42px; font-weight: 800; color: var(--coral-deep);
+    animation: omIn 1.2s ease forwards;
+  }
+  @keyframes omIn {
+    0% { opacity: 0; transform: translate(-50%, -40%) scale(0.8); }
+    40% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -64%) scale(1.08); }
+  }
+  .flame {
+    width: 16px; height: 28px; border-radius: 50% 50% 40% 40%;
+    background: radial-gradient(circle at 50% 70%, #fff6c8, #ff9a3c 55%, #e04a30);
+    box-shadow: 0 0 16px 4px rgba(255, 154, 60, 0.55);
+    animation: aarti 2.1s ease-in-out forwards;
+  }
+  @keyframes aarti {
+    0% { transform: translate(-50%, -50%) rotate(-22deg); opacity: 0; }
+    18% { opacity: 1; }
+    50% { transform: translate(-50%, -50%) rotate(22deg); }
+    100% { transform: translate(-50%, -50%) rotate(-6deg); opacity: 0; }
+  }
+  .mark { display: flex; flex-direction: column; gap: 3px; animation: markFade 2.2s ease forwards; }
+  @keyframes markFade { 0% { opacity: 0; } 20% { opacity: 1; } 100% { opacity: 0; } }
+  .smoke {
+    width: 10px; height: 10px; border-radius: 50%; background: rgba(180, 190, 210, 0.5);
+    filter: blur(3px); animation: rise 2.2s ease-out forwards;
+  }
+  @keyframes rise {
+    0% { opacity: 0.55; transform: translate(-50%, 0) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -140px) scale(3.2); }
+  }
 
-  @media (prefers-reduced-motion: reduce){
-    #murtiWrap.alive, #aura, #yantra {animation:none !important;}
-    .petal,.spark,.om-flash,.diya,#rays{animation-duration:.01ms !important;}
+  #tray {
+    position: absolute; left: 0; right: 0; bottom: calc(62px + var(--safe-bot));
+    z-index: 12; display: flex; gap: 8px; padding: 0 12px;
+    overflow-x: auto; scrollbar-width: none;
   }
+  #tray::-webkit-scrollbar { display: none; }
+  .offer {
+    flex: 0 0 auto; width: 62px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+    background: none; border: none; color: var(--ink); padding: 0;
+  }
+  .offer .dot {
+    position: relative; width: 50px; height: 50px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,253,251,0.92); border: var(--border);
+    box-shadow: var(--shadow); color: var(--coral-deep);
+  }
+  .offer .no {
+    position: absolute; top: -4px; left: -4px; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--paper); border: 1px solid color-mix(in srgb, var(--coral-soft) 60%, transparent);
+    font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    color: var(--mist);
+  }
+  .offer .name { font-family: var(--dev); font-size: 10px; font-weight: 800; color: var(--mist); }
+  .offer.current .dot {
+    transform: scale(1.1); border-color: var(--coral);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--coral) 22%, transparent);
+  }
+  .offer.done .dot { border-color: var(--gold); }
+  .offer.done .no { background: var(--gold); color: var(--ink); border-color: var(--gold); }
+  .offer.done .name { color: var(--coral-deep); }
+
+  #dock {
+    position: absolute; left: 0; right: 0; bottom: 0; z-index: 12;
+    display: flex; gap: 8px; padding: 8px 12px calc(var(--safe-bot) + 8px);
+  }
+  .tool {
+    flex: 1; font-family: var(--ui); font-size: 13px; font-weight: 800; padding: 12px 8px;
+    border-radius: 14px; border: var(--border); background: rgba(255,253,251,0.92); color: var(--ink);
+  }
+  .tool.primary { background: var(--coral); color: #fff; border-color: transparent; }
+  .tool:active { transform: scale(0.96); }
+
+  #complete {
+    position: absolute; inset: 0; z-index: 40; display: none;
+    align-items: center; justify-content: center; padding: 24px;
+    background: rgba(255, 246, 232, 0.72); backdrop-filter: blur(8px);
+  }
+  #complete.show { display: flex; }
+  #complete .inner {
+    width: min(360px, 100%); text-align: center;
+    background: rgba(255,253,251,0.95); border-radius: 22px; padding: 22px 18px;
+    border: var(--border); box-shadow: var(--shadow);
+  }
+  #complete .om { font-family: var(--dev); font-size: 40px; color: var(--coral-deep); line-height: 1; }
+  #complete h2 { font-family: var(--dev); font-size: 22px; margin: 8px 0 6px; color: var(--ink); }
+  #complete p { font-size: 13.5px; font-weight: 600; color: var(--mist); line-height: 1.55; margin: 0 0 14px; }
 </style>
 </head>
 <body>
 <div id="app">
   <div id="chooser">
-    <div class="ch-kicker">मूर्ति</div>
-    <h1 class="ch-title">Living Murti</h1>
-    <p class="ch-sub">Choose a deity, or place your own image. Touch the murti to wake it.</p>
+    <p class="kicker">मूर्ति पूजा</p>
+    <h1>Living Murti</h1>
+    <p class="lede">Choose a deity. Their mantra is ready. Offer jal, flowers, aarti — a quiet puja of the mind.</p>
     <div class="grid" id="grid"></div>
-    <input type="file" id="fileInput" class="visually-hidden" accept="image/*">
+    <input type="file" id="fileInput" class="visually-hidden" accept="image/*" tabindex="-1" aria-hidden="true">
+  </div>
+
+  <div id="variants" class="hidden">
+    <button type="button" class="back" id="varBack">All deities</button>
+    <p class="kicker">शिव</p>
+    <h1>Choose a form</h1>
+    <p class="lede">Each form of Shiva carries ॐ नमः शिवाय — and its own name-mantra.</p>
+    <div class="grid" id="varGrid"></div>
   </div>
 
   <div id="stage">
-    <div id="bg"><img id="bgImg" alt="" hidden></div>
-    <svg id="yantra" viewBox="0 0 200 200" aria-hidden="true">
-      <g fill="none" stroke="currentColor" stroke-width="1.1" color="#d4b483">
-        <circle cx="100" cy="100" r="92"/>
-        <circle cx="100" cy="100" r="78"/>
-        <circle cx="100" cy="100" r="18"/>
-        <polygon points="100,22 168,148 32,148"/>
-        <polygon points="100,178 32,52 168,52"/>
-        <polygon points="100,38 154,138 46,138"/>
-        <polygon points="100,162 46,62 154,62"/>
-      </g>
-    </svg>
     <div id="aura"></div>
-    <div id="rays"></div>
+    <div id="arch" aria-hidden="true"></div>
     <div id="murtiWrap" class="alive" role="button" tabindex="0" aria-label="Wake the murti">
       <img id="murtiImg" alt="Murti">
     </div>
+    <div id="liturgy">
+      <div id="mantraBar">
+        <p id="mantraHi" title="Tap to chant"></p>
+        <p id="mantraEn"></p>
+      </div>
+      <div id="caption">
+        <p class="hi" id="capHi"></p>
+        <p class="en" id="capEn"></p>
+        <div id="track"><div id="fill"></div></div>
+      </div>
+    </div>
     <div id="fx"></div>
-    <div id="hint">Touch the murti</div>
-  </div>
-
-  <div id="dock">
-    <div class="rites" id="rites"></div>
-    <div class="tools">
-      <button type="button" class="tool" id="changeBtn">Change murti</button>
-      <button type="button" class="tool" id="customizeBtn">Customize</button>
+    <div id="tray" aria-label="Offerings"></div>
+    <div id="dock">
+      <button type="button" class="tool" id="changeBtn">Change</button>
+      <button type="button" class="tool primary" id="offerBtn">Offer</button>
     </div>
   </div>
 
-  <div id="sheetBg">
-    <div id="sheet" role="dialog" aria-labelledby="sheetTitle">
-      <div class="handle"></div>
-      <div class="sheet-h">
-        <h2 id="sheetTitle">Presence</h2>
-        <button type="button" class="xbtn" id="sheetClose" aria-label="Close">✕</button>
-      </div>
-      <div class="sec">
-        <div class="sec-l">Aura</div>
-        <div class="swatches" id="swatches"></div>
-      </div>
-      <div class="sec">
-        <div class="sec-l">Intensity <span id="intVal" style="float:right; text-transform:none; letter-spacing:0;">70%</span></div>
-        <input type="range" id="intSlider" min="20" max="100" value="70">
-      </div>
-      <div class="sec">
-        <div class="row"><span>Living breath</span><button type="button" class="tog on" id="breathTog" aria-pressed="true"><i></i></button></div>
-        <div class="row"><span>Temple bell</span><button type="button" class="tog on" id="bellTog" aria-pressed="true"><i></i></button></div>
-      </div>
+  <div id="complete">
+    <div class="inner">
+      <div class="om">ॐ</div>
+      <h2>Puja complete</h2>
+      <p id="bless">May this offering of the mind bring you peace.</p>
+      <button type="button" class="start" id="sitBtn">Sit with the murti</button>
+      <button type="button" class="tool" id="againBtn" style="margin-top:8px;width:100%;">Choose another</button>
     </div>
   </div>
 </div>
-
 <script>
-(function(){
-  const PRESETS = [
-    {id:'shiva', hi:'शिव', en:'Shiva', src:'../deities/shiva.webp', aura:'#9fb2cc'},
-    {id:'ganesha', hi:'गणेश', en:'Ganesha', src:'../deities/ganesha.webp', aura:'#e6b866'},
-    {id:'krishna', hi:'कृष्ण', en:'Krishna', src:'../deities/krishna.webp', aura:'#7fa4d6'},
-    {id:'durga', hi:'दुर्गा', en:'Durga', src:'../deities/durga.webp', aura:'#c45c3e'},
-    {id:'lakshmi', hi:'लक्ष्मी', en:'Lakshmi', src:'../deities/lakshmi.webp', aura:'#d4a017'},
-    {id:'hanuman', hi:'हनुमान', en:'Hanuman', src:'../deities/hanuman.webp', aura:'#e07a3d'},
-    {id:'saraswati', hi:'सरस्वती', en:'Saraswati', src:'../deities/saraswati.webp', aura:'#cfd8e6'},
-    {id:'rama', hi:'राम', en:'Rama', src:'../deities/rama.webp', aura:'#5b7cbf'},
-    {id:'kali', hi:'काली', en:'Kali', src:'../deities/kali.webp', aura:'#c43c4e'},
-    {id:'nataraj', hi:'नटराज', en:'Nataraj', src:'../deities/shiva-nataraj.webp', aura:'#e6b866'},
-    {id:'ardhanari', hi:'अर्धनारेश्वर', en:'Ardhanarishvara', src:'../deities/shiva-ardhnareshwar.webp', aura:'#d4a0b8'},
-    {id:'bhairav', hi:'कालभैरव', en:'Kaal Bhairav', src:'../deities/shiva-kaalbhairav.webp', aura:'#c07840'},
-  ];
-  const RITES = [
-    {id:'darshan', label:'Darshan'},
-    {id:'blessing', label:'Blessing'},
-    {id:'aarti', label:'Aarti'},
-    {id:'lotus', label:'Lotus'},
-    {id:'tandava', label:'Tandava'},
-    {id:'cosmic', label:'Cosmic'},
-  ];
-  const AURAS = [
-    {name:'Sacred', hex:'#d4b483'},
-    {name:'Moon', hex:'#c9d4e4'},
-    {name:'Saffron', hex:'#e08a3c'},
-    {name:'Lotus', hex:'#e08aa8'},
-    {name:'Vermillion', hex:'#c45c3e'},
-    {name:'Forest', hex:'#7aa37a'},
-    {name:'Ocean', hex:'#6a93c4'},
-    {name:'Ember', hex:'#e05030'},
-  ];
-  const FLOWERS = ['🌼','🌸','🪷','💮','🏵️','🌺'];
+(function () {
+  const ICONS = {
+    jal: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3s6 7 6 11a6 6 0 1 1-12 0c0-4 6-11 6-11z"/></svg>',
+    milk: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 4h8l2 5v9a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3V9z"/><path d="M7 9h10"/></svg>',
+    tilak: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="3"/><path d="M12 11v8"/><path d="M9 15h6"/></svg>',
+    flowers: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="2.2"/><circle cx="12" cy="5.5" r="2"/><circle cx="12" cy="18.5" r="2"/><circle cx="5.5" cy="12" r="2"/><circle cx="18.5" cy="12" r="2"/></svg>',
+    dhoop: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 21v-7"/><path d="M9 21h6"/><path d="M12 10c2-2 1-4 0-6 2 1 4 3 4 6 0 1.7-1.8 3-4 3s-4-1.3-4-3c0-1 1-2 2-3"/></svg>',
+    aarti: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3c2 3 4 5 4 8a4 4 0 1 1-8 0c0-3 2-5 4-8z"/><path d="M8 20h8"/></svg>',
+    mantra: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="8"/><path d="M8 13c1.5-3 3.2-4.5 6-4.2 2 .2 3 1.4 3 3 0 2.4-2.6 3.2-4.8 4.2"/></svg>',
+    pranam: '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4c2.4 3 5.5 5 5.5 8.2A5.5 5.5 0 1 1 6.5 12.2C6.5 9 9.6 7 12 4z"/></svg>',
+  };
 
-  const chooser = document.getElementById('chooser');
-  const grid = document.getElementById('grid');
-  const fileInput = document.getElementById('fileInput');
-  const murtiWrap = document.getElementById('murtiWrap');
-  const murtiImg = document.getElementById('murtiImg');
-  const aura = document.getElementById('aura');
-  const rays = document.getElementById('rays');
-  const fx = document.getElementById('fx');
-  const hint = document.getElementById('hint');
-  const ritesEl = document.getElementById('rites');
-  const sheetBg = document.getElementById('sheetBg');
-  const swatches = document.getElementById('swatches');
-  const intSlider = document.getElementById('intSlider');
-  const intVal = document.getElementById('intVal');
-  const breathTog = document.getElementById('breathTog');
-  const bellTog = document.getElementById('bellTog');
-  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const DEITIES = [
+    { id: "ganesha", hi: "गणेश", en: "Ganesha", src: "../deities/ganesha.webp", aura: "#ffd080", mantra: "ॐ गं गणपतये नमः", mantraEn: "Om Gam Ganapataye Namah", audio: null },
+    { id: "shiva", hi: "शिव", en: "Shiva · forms", src: "../deities/shiva.webp", aura: "#b8d0f0", mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya", shiva: true, audio: "../deities/om-namah-shivaya.mp3" },
+    { id: "krishna", hi: "कृष्ण", en: "Krishna", src: "../deities/krishna.webp", aura: "#a8c4ff", mantra: "ॐ नमो भगवते वासुदेवाय", mantraEn: "Om Namo Bhagavate Vasudevaya" },
+    { id: "durga", hi: "दुर्गा", en: "Durga", src: "../deities/durga.webp", aura: "#ffb0a0", mantra: "ॐ दुं दुर्गायै नमः", mantraEn: "Om Dum Durgayai Namah" },
+    { id: "lakshmi", hi: "लक्ष्मी", en: "Lakshmi", src: "../deities/lakshmi.webp", aura: "#ffe08e", mantra: "ॐ श्रीं महालक्ष्म्यै नमः", mantraEn: "Om Shreem Mahalakshmyai Namah" },
+    { id: "hanuman", hi: "हनुमान", en: "Hanuman", src: "../deities/hanuman.webp", aura: "#ffc090", mantra: "ॐ हनुमते नमः", mantraEn: "Om Hanumate Namah" },
+    { id: "saraswati", hi: "सरस्वती", en: "Saraswati", src: "../deities/saraswati.webp", aura: "#dce6ff", mantra: "ॐ ऐं सरस्वत्यै नमः", mantraEn: "Om Aim Saraswatyai Namah" },
+    { id: "rama", hi: "राम", en: "Rama", src: "../deities/rama.webp", aura: "#9bb6e8", mantra: "ॐ श्री रामाय नमः", mantraEn: "Om Shri Ramaya Namah" },
+    { id: "kali", hi: "काली", en: "Kali", src: "../deities/kali.webp", aura: "#f0a0b4", mantra: "ॐ क्रिं कालीकायै नमः", mantraEn: "Om Krim Kalikayai Namah" },
+  ];
 
-  let rite = 'darshan';
-  let intensity = 70;
-  let breathOn = true;
-  let bellOn = true;
+  const SHIVA = [
+    { id: "shiva-main", hi: "शिव", en: "Shiva", src: "../deities/shiva.webp", aura: "#b8d0f0", mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya", audio: "../deities/om-namah-shivaya.mp3" },
+    { id: "meditating", hi: "ध्यानस्थ", en: "Meditating", src: "../deities/shiva-meditating.webp", aura: "#c8d8f0", mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya", audio: "../deities/om-namah-shivaya.mp3" },
+    { id: "abhay", hi: "अभय", en: "Abhaya", src: "../deities/shiva-meditating_abhay.webp", aura: "#d0e0f8", mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya", audio: "../deities/om-namah-shivaya.mp3" },
+    { id: "nataraj", hi: "नटराज", en: "Nataraj", src: "../deities/shiva-nataraj.webp", aura: "#ffd080", mantra: "ॐ नटराजाय नमः", mantraEn: "Om Natarajaya Namah" },
+    { id: "ardhanari", hi: "अर्धनारेश्वर", en: "Ardhanarishvara", src: "../deities/shiva-ardhnareshwar.webp", aura: "#f0c0d8", mantra: "ॐ अर्धनारीश्वराय नमः", mantraEn: "Om Ardhanarishwaraya Namah" },
+    { id: "chandrashekhar", hi: "चन्द्रशेखर", en: "Chandrashekhar", src: "../deities/shiva-chandrashekhar.webp", aura: "#e8d8b0", mantra: "ॐ चन्द्रशेखराय नमः", mantraEn: "Om Chandrashekharaya Namah" },
+    { id: "neelkanth", hi: "नीलकंठ", en: "Neelkanth", src: "../deities/shiva-neelkanth.webp", aura: "#b8d8d0", mantra: "ॐ नीलकण्ठाय नमः", mantraEn: "Om Neelkanthaya Namah" },
+    { id: "gangadhar", hi: "गंगाधर", en: "Gangadhar", src: "../deities/shiva-gangadhar.webp", aura: "#c0d8f0", mantra: "ॐ गंगाधराय नमः", mantraEn: "Om Gangadharaya Namah" },
+    { id: "shivyogi", hi: "शिव योगी", en: "Shiva Yogi", src: "../deities/shiva-shivyogi.webp", aura: "#d8c8b0", mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya", audio: "../deities/om-namah-shivaya.mp3" },
+    { id: "bhairav", hi: "कालभैरव", en: "Kaal Bhairav", src: "../deities/shiva-kaalbhairav.webp", aura: "#e8b080", mantra: "ॐ भैरवाय नमः", mantraEn: "Om Bhairavaya Namah" },
+  ];
+
+  const STEPS = [
+    { id: "jal", hi: "जल", en: "Sacred water", capHi: "जल अभिषेक", capEn: "Bathe the murti with jal", fx: "water" },
+    { id: "milk", hi: "दुग्ध", en: "Milk", capHi: "दुग्ध अभिषेक", capEn: "Offer milk abhishekam", fx: "milk" },
+    { id: "tilak", hi: "तिलक", en: "Tilak", capHi: "तिलक अर्पण", capEn: "Mark a tilak on the brow", fx: "tilak" },
+    { id: "flowers", hi: "पुष्प", en: "Flowers", capHi: "पुष्प अर्पण", capEn: "Shower the murti with flowers", fx: "flowers" },
+    { id: "dhoop", hi: "धूप", en: "Incense", capHi: "धूप दीप", capEn: "Let incense rise", fx: "smoke" },
+    { id: "aarti", hi: "आरती", en: "Aarti", capHi: "आरती", capEn: "Circle the lamp with love", fx: "aarti" },
+    { id: "mantra", hi: "मंत्र", en: "Mantra", capHi: "मंत्र जाप", capEn: "Speak their name-mantra", fx: "mantra" },
+    { id: "pranam", hi: "प्रणाम", en: "Bow", capHi: "प्रणाम", capEn: "Bow, and rest in the gaze", fx: "pranam" },
+  ];
+
+  const PETAL_COLORS = ["#ffb8a0", "#ffd080", "#ffc0d0", "#cfe4ff", "#ffe08e", "#f0c0d8"];
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const chooser = document.getElementById("chooser");
+  const variants = document.getElementById("variants");
+  const grid = document.getElementById("grid");
+  const varGrid = document.getElementById("varGrid");
+  const fileInput = document.getElementById("fileInput");
+  const murtiWrap = document.getElementById("murtiWrap");
+  const murtiImg = document.getElementById("murtiImg");
+  const aura = document.getElementById("aura");
+  const fx = document.getElementById("fx");
+  const tray = document.getElementById("tray");
+  const mantraHi = document.getElementById("mantraHi");
+  const mantraEn = document.getElementById("mantraEn");
+  const capHi = document.getElementById("capHi");
+  const capEn = document.getElementById("capEn");
+  const fill = document.getElementById("fill");
+  const offerBtn = document.getElementById("offerBtn");
+  const complete = document.getElementById("complete");
+
+  let current = null;
+  let customUrl = null;
+  let step = 0;
+  let done = new Set();
   let audioCtx = null;
   let lastWake = 0;
-  let customUrl = null;
+  let mantraAudio = null;
 
-  PRESETS.forEach((p) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'tile';
-    b.innerHTML = `<img src="${p.src}" alt="${p.en}" loading="lazy"><span>${p.hi}</span>`;
-    b.addEventListener('click', () => selectPreset(p));
-    grid.appendChild(b);
+  function tileFor(p, onClick) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "tile";
+    b.innerHTML = `<img src="${p.src}" alt="${p.en}" loading="lazy"><span class="cap"><span class="hi">${p.hi}</span><span class="en">${p.en}</span></span>`;
+    b.addEventListener("click", onClick);
+    return b;
+  }
+
+  DEITIES.forEach((p) => {
+    grid.appendChild(tileFor(p, () => {
+      if (p.shiva) {
+        chooser.classList.add("hidden");
+        variants.classList.remove("hidden");
+      } else select(p);
+    }));
   });
-  const up = document.createElement('button');
-  up.type = 'button';
-  up.className = 'tile upload-tile';
+  const up = document.createElement("button");
+  up.type = "button";
+  up.className = "tile upload-tile";
   up.innerHTML = `<span class="plus">+</span><span class="lbl">Your image</span>`;
-  up.addEventListener('click', () => { fileInput.value=''; fileInput.click(); });
+  up.addEventListener("click", () => { fileInput.value = ""; fileInput.click(); });
   grid.appendChild(up);
 
-  fileInput.addEventListener('change', (e) => {
-    const file = e.target.files && e.target.files[0];
-    if(!file) return;
-    if(customUrl) URL.revokeObjectURL(customUrl);
-    customUrl = URL.createObjectURL(file);
-    placeMurti(customUrl, 'Your murti', '#d4b483');
+  SHIVA.forEach((p) => varGrid.appendChild(tileFor(p, () => select(p))));
+  document.getElementById("varBack").addEventListener("click", () => {
+    variants.classList.add("hidden");
+    chooser.classList.remove("hidden");
   });
 
-  RITES.forEach((r, i) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'rite' + (i===0 ? ' active' : '');
-    b.dataset.rite = r.id;
-    b.textContent = r.label;
-    b.addEventListener('click', () => setRite(r.id));
-    ritesEl.appendChild(b);
+  fileInput.addEventListener("change", (e) => {
+    const f = e.target.files && e.target.files[0];
+    if (!f) return;
+    if (customUrl) URL.revokeObjectURL(customUrl);
+    customUrl = URL.createObjectURL(f);
+    select({ id: "custom", hi: "इष्ट", en: "Ishta", src: customUrl, aura: "#ffd080", mantra: "ॐ", mantraEn: "Om" });
   });
 
-  AURAS.forEach((a, i) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'sw' + (i===0 ? ' active' : '');
-    b.style.background = a.hex;
-    b.title = a.name;
-    b.addEventListener('click', () => {
-      document.querySelectorAll('.sw').forEach(s => s.classList.remove('active'));
-      b.classList.add('active');
-      setAura(a.hex);
+  STEPS.forEach((s, i) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "offer";
+    b.dataset.id = s.id;
+    b.innerHTML = `<span class="dot">${ICONS[s.id] || ""}<span class="no">${i + 1}</span></span><span class="name">${s.hi}</span>`;
+    b.addEventListener("click", () => offerAt(i));
+    tray.appendChild(b);
+  });
+
+  function setAura(hex) { document.documentElement.style.setProperty("--aura", hex); }
+
+  function select(p) {
+    current = p;
+    step = 0;
+    done = new Set();
+    complete.classList.remove("show");
+    murtiImg.src = p.src;
+    murtiImg.alt = p.en;
+    mantraHi.textContent = p.mantra;
+    mantraEn.textContent = p.mantraEn;
+    setAura(p.aura);
+    chooser.classList.add("hidden");
+    variants.classList.add("hidden");
+    paintSteps();
+    chant(p);
+  }
+
+  function paintSteps() {
+    document.querySelectorAll(".offer").forEach((el, i) => {
+      el.classList.toggle("done", done.has(STEPS[i].id));
+      el.classList.toggle("current", i === step && !done.has(STEPS[i].id));
     });
-    swatches.appendChild(b);
-  });
-
-  function setAura(hex){
-    document.documentElement.style.setProperty('--aura', hex);
-  }
-  function setRite(id){
-    rite = id;
-    document.querySelectorAll('.rite').forEach(b => b.classList.toggle('active', b.dataset.rite===id));
-    document.body.classList.toggle('rite-cosmic', id==='cosmic');
-  }
-  function selectPreset(p){
-    placeMurti(p.src, p.en, p.aura);
-  }
-  function placeMurti(src, alt, hex){
-    murtiImg.src = src;
-    murtiImg.alt = alt;
-    setAura(hex || '#d4b483');
-    chooser.classList.add('hidden');
-    hint.classList.remove('fade');
-    setTimeout(() => hint.classList.add('fade'), 2400);
+    const s = STEPS[Math.min(step, STEPS.length - 1)];
+    capHi.textContent = s.capHi;
+    capEn.textContent = s.capEn;
+    fill.style.width = (done.size / STEPS.length) * 100 + "%";
+    offerBtn.textContent = done.size >= STEPS.length ? "Complete" : "Offer " + s.en.toLowerCase();
   }
 
-  function bell(){
-    if(!bellOn) return;
-    try{
-      if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  function chant(p) {
+    if (mantraAudio) { mantraAudio.pause(); mantraAudio = null; }
+    if (p && p.audio) {
+      try {
+        mantraAudio = new Audio(p.audio);
+        mantraAudio.volume = 0.7;
+        mantraAudio.play().catch(() => speak(p.mantra));
+        return;
+      } catch (e) {}
+    }
+    speak(p ? p.mantra : "");
+  }
+  function speak(text) {
+    if (!window.speechSynthesis || !text) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = "hi-IN"; u.rate = 0.82; u.pitch = 1.12; u.volume = 0.72;
+      const hi = window.speechSynthesis.getVoices().find((v) => v.lang.startsWith("hi"));
+      if (hi) u.voice = hi;
+      window.speechSynthesis.speak(u);
+    } catch (e) {}
+  }
+  if (window.speechSynthesis) {
+    window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
+  }
+
+  function bell() {
+    try {
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       const t0 = audioCtx.currentTime;
       const make = (freq, dur, vol) => {
         const osc = audioCtx.createOscillator();
         const g = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = freq;
+        osc.type = "sine"; osc.frequency.value = freq;
         g.gain.setValueAtTime(0.0001, t0);
-        g.gain.exponentialRampToValueAtTime(vol, t0+0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t0+dur);
+        g.gain.exponentialRampToValueAtTime(vol, t0 + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
         osc.connect(g).connect(audioCtx.destination);
-        osc.start(t0); osc.stop(t0+dur+0.05);
+        osc.start(t0); osc.stop(t0 + dur + 0.05);
       };
-      make(528, 1.6, 0.07);
-      make(792, 1.3, 0.045);
-      make(264, 1.8, 0.04);
-    }catch(e){}
+      make(528, 1.4, 0.07); make(792, 1.1, 0.04); make(264, 1.6, 0.035);
+    } catch (e) {}
   }
 
-  function burstSparks(n){
-    const r = murtiWrap.getBoundingClientRect();
-    const cx = r.left + r.width/2, cy = r.top + r.height*0.38;
-    const count = Math.round(n * intensity/100);
-    for(let i=0;i<count;i++){
-      const s = document.createElement('div');
-      s.className = 'spark';
-      const ang = Math.random()*Math.PI*2;
-      const dist = 40 + Math.random()* (80 + intensity);
-      s.style.left = cx+'px';
-      s.style.top = cy+'px';
-      s.style.setProperty('--dx', Math.cos(ang)*dist+'px');
-      s.style.setProperty('--dy', Math.sin(ang)*dist+'px');
-      s.style.background = getComputedStyle(document.documentElement).getPropertyValue('--aura').trim();
-      fx.appendChild(s);
-      setTimeout(() => s.remove(), 1000);
-    }
-  }
-  function shower(kind){
-    const set = kind==='lotus' ? ['🪷','🌸','💮'] : FLOWERS;
-    const n = Math.round((22 + Math.random()*16) * intensity/100);
-    for(let i=0;i<n;i++){
-      const p = document.createElement('div');
-      p.className = 'petal';
-      p.textContent = set[Math.floor(Math.random()*set.length)];
-      p.style.left = Math.random()*100+'vw';
-      p.style.fontSize = (14+Math.random()*16)+'px';
-      p.style.animationDuration = (2.2+Math.random()*2.2)+'s';
-      p.style.animationDelay = (Math.random()*0.45)+'s';
-      p.style.setProperty('--sway', ((Math.random()-0.5)*90)+'px');
-      p.style.setProperty('--spin', ((Math.random()-0.5)*220)+'deg');
-      fx.appendChild(p);
-      setTimeout(() => p.remove(), 4800);
-    }
-  }
-  function omFlash(){
-    const o = document.createElement('div');
-    o.className = 'om-flash';
-    o.textContent = 'ॐ';
-    fx.appendChild(o);
-    setTimeout(() => o.remove(), 1300);
-  }
-  function aartiSweep(){
-    const d = document.createElement('div');
-    d.className = 'diya';
-    d.textContent = '🪔';
-    const r = murtiWrap.getBoundingClientRect();
-    d.style.left = (r.left + r.width*0.78)+'px';
-    d.style.top = (r.top + r.height*0.42)+'px';
-    fx.appendChild(d);
-    setTimeout(() => d.remove(), 2300);
-  }
-
-  function wake(){
+  function wake() {
     const now = Date.now();
-    if(now - lastWake < 420) return;
+    if (now - lastWake < 380) return;
     lastWake = now;
-    hint.classList.add('fade');
-    if(!reduced){
-      murtiWrap.classList.remove('awake');
-      void murtiWrap.offsetWidth;
-      murtiWrap.classList.add('awake');
-      aura.classList.remove('burst');
-      void aura.offsetWidth;
-      aura.classList.add('burst');
-      rays.classList.remove('show');
-      void rays.offsetWidth;
-      rays.classList.add('show');
+    if (!reduced) {
+      murtiWrap.classList.remove("awake"); void murtiWrap.offsetWidth; murtiWrap.classList.add("awake");
+      aura.classList.remove("burst"); void aura.offsetWidth; aura.classList.add("burst");
     }
     bell();
-    if(reduced) return;
+    burst(18);
+  }
 
-    if(rite==='darshan'){
-      burstSparks(26); omFlash();
-    } else if(rite==='blessing'){
-      burstSparks(18); shower('mix');
-    } else if(rite==='aarti'){
-      aartiSweep(); burstSparks(14);
-    } else if(rite==='lotus'){
-      shower('lotus'); omFlash();
-    } else if(rite==='tandava'){
-      burstSparks(48); shower('mix');
-      document.getElementById('stage').animate(
-        [{transform:'translateX(0)'},{transform:'translateX(-3px)'},{transform:'translateX(3px)'},{transform:'translateX(0)'}],
-        {duration:280, easing:'ease-out'}
-      );
-    } else if(rite==='cosmic'){
-      burstSparks(36); omFlash();
+  function burst(n) {
+    const r = murtiWrap.getBoundingClientRect();
+    const cx = r.left + r.width / 2, cy = r.top + r.height * 0.38;
+    for (let i = 0; i < n; i++) {
+      const s = document.createElement("div"); s.className = "spark";
+      const ang = Math.random() * Math.PI * 2, dist = 40 + Math.random() * 90;
+      s.style.left = cx + "px"; s.style.top = cy + "px";
+      s.style.setProperty("--dx", Math.cos(ang) * dist + "px");
+      s.style.setProperty("--dy", Math.sin(ang) * dist + "px");
+      fx.appendChild(s); setTimeout(() => s.remove(), 950);
+    }
+  }
+  function shower() {
+    for (let i = 0; i < 26; i++) {
+      const p = document.createElement("div"); p.className = "petal";
+      p.style.left = Math.random() * 100 + "vw";
+      p.style.setProperty("--petal", PETAL_COLORS[i % PETAL_COLORS.length]);
+      p.style.animationDuration = 2.2 + Math.random() * 2 + "s";
+      p.style.setProperty("--sway", (Math.random() - 0.5) * 80 + "px");
+      p.style.setProperty("--spin", (Math.random() - 0.5) * 200 + "deg");
+      fx.appendChild(p); setTimeout(() => p.remove(), 4500);
+    }
+  }
+  function pour(color) {
+    const r = murtiWrap.getBoundingClientRect();
+    for (let i = 0; i < 18; i++) {
+      const d = document.createElement("div"); d.className = "drop";
+      d.style.left = r.left + r.width * (0.35 + Math.random() * 0.3) + "px";
+      d.style.top = r.top + r.height * 0.12 + "px";
+      d.style.height = 8 + Math.random() * 10 + "px";
+      d.style.background = color;
+      d.style.animationDelay = Math.random() * 0.25 + "s";
+      fx.appendChild(d); setTimeout(() => d.remove(), 1200);
+    }
+  }
+  function omFlash() {
+    const o = document.createElement("div"); o.className = "om-flash"; o.textContent = "ॐ";
+    fx.appendChild(o); setTimeout(() => o.remove(), 1300);
+  }
+  function aarti() {
+    const r = murtiWrap.getBoundingClientRect();
+    const d = document.createElement("div"); d.className = "flame";
+    d.style.left = r.left + r.width * 0.78 + "px";
+    d.style.top = r.top + r.height * 0.42 + "px";
+    fx.appendChild(d); setTimeout(() => d.remove(), 2200);
+  }
+  function smoke() {
+    const r = murtiWrap.getBoundingClientRect();
+    for (let i = 0; i < 8; i++) {
+      const s = document.createElement("div"); s.className = "smoke";
+      s.style.left = r.left + r.width * (0.45 + Math.random() * 0.2) + "px";
+      s.style.top = r.top + r.height * 0.35 + "px";
+      s.style.animationDelay = i * 0.12 + "s";
+      fx.appendChild(s); setTimeout(() => s.remove(), 2400);
+    }
+  }
+  function tilak() {
+    const r = murtiWrap.getBoundingClientRect();
+    const m = document.createElement("div"); m.className = "mark";
+    m.style.left = r.left + r.width * 0.5 + "px";
+    m.style.top = r.top + r.height * 0.22 + "px";
+    m.style.transform = "translate(-50%,-50%)";
+    m.innerHTML = '<i style="display:block;width:22px;height:3px;background:#c45c3e;border-radius:2px"></i><i style="display:block;width:22px;height:3px;background:#c45c3e;border-radius:2px"></i><i style="display:block;width:22px;height:3px;background:#c45c3e;border-radius:2px"></i>';
+    fx.appendChild(m); setTimeout(() => m.remove(), 2300);
+  }
+
+  function playFx(kind) {
+    if (kind === "water") pour("rgba(140,190,240,.9)");
+    else if (kind === "milk") pour("rgba(255,250,240,.95)");
+    else if (kind === "tilak") tilak();
+    else if (kind === "flowers") shower();
+    else if (kind === "smoke") smoke();
+    else if (kind === "aarti") aarti();
+    else if (kind === "mantra") { omFlash(); if (current) chant(current); }
+    else if (kind === "pranam") { omFlash(); burst(28); }
+  }
+
+  function offerAt(i) {
+    if (!current) return;
+    const s = STEPS[i];
+    done.add(s.id);
+    if (i >= step) step = Math.min(i + 1, STEPS.length - 1);
+    wake();
+    playFx(s.fx);
+    paintSteps();
+    if (done.size >= STEPS.length) {
+      fill.style.width = "100%";
+      setTimeout(() => complete.classList.add("show"), 700);
     }
   }
 
-  murtiWrap.addEventListener('click', wake);
-  murtiWrap.addEventListener('keydown', (e) => {
-    if(e.key==='Enter' || e.key===' '){ e.preventDefault(); wake(); }
+  offerBtn.addEventListener("click", () => {
+    if (done.size >= STEPS.length) { complete.classList.add("show"); return; }
+    let i = STEPS.findIndex((s) => !done.has(s.id));
+    if (i < 0) i = STEPS.length - 1;
+    offerAt(i);
   });
-
-  document.getElementById('changeBtn').addEventListener('click', () => {
-    chooser.classList.remove('hidden');
+  murtiWrap.addEventListener("click", wake);
+  murtiWrap.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" || e.key === " ") { e.preventDefault(); wake(); }
   });
-  document.getElementById('customizeBtn').addEventListener('click', () => sheetBg.classList.add('show'));
-  document.getElementById('sheetClose').addEventListener('click', () => sheetBg.classList.remove('show'));
-  sheetBg.addEventListener('click', (e) => { if(e.target===sheetBg) sheetBg.classList.remove('show'); });
-
-  intSlider.addEventListener('input', () => {
-    intensity = +intSlider.value;
-    intVal.textContent = intensity+'%';
+  mantraHi.addEventListener("click", () => { if (current) { omFlash(); chant(current); } });
+  document.getElementById("changeBtn").addEventListener("click", () => {
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    if (mantraAudio) { mantraAudio.pause(); mantraAudio = null; }
+    complete.classList.remove("show");
+    chooser.classList.remove("hidden");
   });
-  function bindTog(el, apply){
-    el.addEventListener('click', () => {
-      const on = !el.classList.contains('on');
-      el.classList.toggle('on', on);
-      el.setAttribute('aria-pressed', on ? 'true' : 'false');
-      apply(on);
-    });
-  }
-  bindTog(breathTog, (on) => {
-    breathOn = on;
-    murtiWrap.classList.toggle('alive', on && !reduced);
+  document.getElementById("sitBtn").addEventListener("click", () => complete.classList.remove("show"));
+  document.getElementById("againBtn").addEventListener("click", () => {
+    complete.classList.remove("show");
+    chooser.classList.remove("hidden");
   });
-  bindTog(bellTog, (on) => { bellOn = on; });
-
-  if(reduced) murtiWrap.classList.remove('alive');
+  if (reduced) murtiWrap.classList.remove("alive");
 })();
 </script>
 </body>

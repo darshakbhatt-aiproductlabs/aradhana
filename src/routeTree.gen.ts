@@ -13,7 +13,6 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as JapaRouteImport } from './routes/japa'
 import { Route as MurtiRouteImport } from './routes/murti'
 import { Route as PathRouteImport } from './routes/path'
-import { Route as PujaRouteImport } from './routes/puja'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -35,25 +34,18 @@ const PathRoute = PathRouteImport.update({
   path: '/path',
   getParentRoute: () => rootRouteImport,
 } as any)
-const PujaRoute = PujaRouteImport.update({
-  id: '/puja',
-  path: '/puja',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/japa': typeof JapaRoute
   '/murti': typeof MurtiRoute
   '/path': typeof PathRoute
-  '/puja': typeof PujaRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/japa': typeof JapaRoute
   '/murti': typeof MurtiRoute
   '/path': typeof PathRoute
-  '/puja': typeof PujaRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -61,14 +53,13 @@ export interface FileRoutesById {
   '/japa': typeof JapaRoute
   '/murti': typeof MurtiRoute
   '/path': typeof PathRoute
-  '/puja': typeof PujaRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/japa' | '/murti' | '/path' | '/puja'
+  fullPaths: '/' | '/japa' | '/murti' | '/path'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/japa' | '/murti' | '/path' | '/puja'
-  id: '__root__' | '/' | '/japa' | '/murti' | '/path' | '/puja'
+  to: '/' | '/japa' | '/murti' | '/path'
+  id: '__root__' | '/' | '/japa' | '/murti' | '/path'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -76,7 +67,6 @@ export interface RootRouteChildren {
   JapaRoute: typeof JapaRoute
   MurtiRoute: typeof MurtiRoute
   PathRoute: typeof PathRoute
-  PujaRoute: typeof PujaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -109,13 +99,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PathRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/puja': {
-      id: '/puja'
-      path: '/puja'
-      fullPath: '/puja'
-      preLoaderRoute: typeof PujaRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
@@ -124,7 +107,6 @@ const rootRouteChildren: RootRouteChildren = {
   JapaRoute: JapaRoute,
   MurtiRoute: MurtiRoute,
   PathRoute: PathRoute,
-  PujaRoute: PujaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
