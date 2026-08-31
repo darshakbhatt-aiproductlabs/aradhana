@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aradhana · आराधना</title>
+<meta name="description" content="Aradhana — the inner temple. Japa, path, manas puja, and a living murti.">
+<meta name="theme-color" content="#100e0c">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Noto+Sans+Devanagari:wght@500;600;700;800&family=Nunito:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night:#100e0c; --elev:#1a1612; --cream:#f3ece2; --muted:#b8a99a; --dim:#8a7b6c;
+    --verm:#c45c3e; --sacred:#d4b483; --border:rgba(243,236,226,.12);
+    --display:'Cinzel', ui-serif, Georgia, serif;
+    --dev:'Noto Sans Devanagari', 'Nunito', sans-serif;
+    --ui:'Nunito', system-ui, sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;height:100%;background:var(--night);color:var(--cream);font-family:var(--ui);}
+  html{-webkit-font-smoothing:antialiased;}
+  #app{display:flex; flex-direction:column; height:100dvh;}
+  main{flex:1; min-height:0; position:relative; overflow:hidden;}
+  .view{position:absolute; inset:0; display:none;}
+  .view.active{display:block;}
+  iframe{width:100%; height:100%; border:0; background:var(--night);}
+
+  #home{
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+  }
+  .wash{
+    position:absolute; inset:0;
+    background:url('deities/sanctum.webp') center/cover no-repeat;
+    opacity:.4; pointer-events:none;
+  }
+  .veil{
+    position:absolute; inset:0;
+    background:linear-gradient(to bottom, rgba(16,14,12,.7), rgba(16,14,12,.8) 40%, #100e0c);
+    pointer-events:none;
+  }
+  .inner{
+    position:relative; max-width:32rem; margin:0 auto;
+    padding: max(1.5rem, env(safe-area-inset-top)) 1.25rem 2.5rem;
+  }
+  .om{width:3.5rem; height:3.5rem; margin:0 auto 1rem; color:var(--sacred); display:block;}
+  .kicker{font-family:var(--dev); font-size:.875rem; font-weight:700; letter-spacing:.28em; color:var(--muted); text-align:center; margin:0;}
+  h1{font-family:var(--display); font-size:2.25rem; font-weight:600; letter-spacing:-.02em; text-align:center; margin:.25rem 0 0;}
+  .lede{max-width:20rem; margin:.5rem auto 2rem; text-align:center; color:var(--muted); font-size:.875rem; line-height:1.55;}
+  .card{
+    display:block; text-decoration:none; color:inherit;
+    background:var(--elev); border-radius:1rem; padding:1rem; margin-bottom:.75rem;
+    box-shadow:0 0 0 1px var(--border), 0 18px 40px -24px rgba(0,0,0,.7);
+  }
+  .card:active{transform:scale(.96);}
+  .card-top{display:flex; justify-content:space-between; align-items:baseline;}
+  .no{font-family:var(--display); font-size:11px; letter-spacing:.18em; color:var(--dim);}
+  .hi{font-family:var(--dev); font-size:1.125rem; font-weight:800; color:var(--verm);}
+  .en{font-family:var(--display); font-size:1.25rem; font-weight:600; margin:.5rem 0 0;}
+  .title{font-size:.75rem; font-weight:700; letter-spacing:.12em; text-transform:uppercase; color:var(--sacred); margin:.15rem 0 0;}
+  .blurb{font-size:.875rem; color:var(--muted); line-height:1.5; margin:.5rem 0 0;}
+  .foot{text-align:center; font-family:var(--display); font-size:.75rem; letter-spacing:.14em; color:var(--dim); margin-top:2rem;}
+
+  nav{
+    display:grid; grid-template-columns:repeat(5,1fr);
+    border-top:1px solid var(--border); background:rgba(26,22,18,.95);
+    padding: .35rem 0 max(.5rem, env(safe-area-inset-bottom));
+  }
+  nav a{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+    min-height:44px; color:var(--dim); text-decoration:none; font-size:10px; font-weight:700; letter-spacing:.04em;
+  }
+  nav a.active{color:var(--cream);}
+  nav svg{width:20px; height:20px;}
+
+  @media (prefers-reduced-motion:reduce){
+    .card:active{transform:none;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <main>
+    <section id="home" class="view active">
+      <div class="wash"></div>
+      <div class="veil"></div>
+      <div class="inner">
+        <svg class="om" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+          <circle cx="32" cy="32" r="30" stroke="currentColor" stroke-width="1.4" opacity=".45"/>
+          <path d="M18 38c2.2-8 8.4-13.5 16.8-13.5 6.4 0 10.8 3.4 10.8 8.2 0 6.4-7.2 8.6-13.2 11.4 4.8.4 9.6 1.6 13.6 4.4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          <path d="M28.5 24.5c4.8-6.6 12.4-8.6 18.2-5.2" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          <circle cx="44.5" cy="16.5" r="3.1" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M20 31.5c3.4-1.6 6.2.4 6.6 3.8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <p class="kicker">आराधना</p>
+        <h1>Aradhana</h1>
+        <p class="lede">The inner temple. Four doors into bhakti — japa, path, puja, and a murti that lives when you touch it.</p>
+
+        <a class="card" href="#japa">
+          <div class="card-top"><span class="no">01</span><span class="hi">जप</span></div>
+          <p class="en">Japa</p>
+          <p class="title">Mala recitation</p>
+          <p class="blurb">A child’s mala. Tap a bead. Keep the name.</p>
+        </a>
+        <a class="card" href="#path">
+          <div class="card-top"><span class="no">02</span><span class="hi">पाठ</span></div>
+          <p class="en">Path</p>
+          <p class="title">Follow the verse</p>
+          <p class="blurb">Walk a hymn word by word, like a finger on the page.</p>
+        </a>
+        <a class="card" href="#puja">
+          <div class="card-top"><span class="no">03</span><span class="hi">पूजा</span></div>
+          <p class="en">Puja</p>
+          <p class="title">Manas puja</p>
+          <p class="blurb">Offer water, flowers, lamp — in the mind, to Shiva.</p>
+        </a>
+        <a class="card" href="#murti">
+          <div class="card-top"><span class="no">04</span><span class="hi">मूर्ति</span></div>
+          <p class="en">Murti</p>
+          <p class="title">Living deity</p>
+          <p class="blurb">Place a murti. Touch it. Let it wake.</p>
+        </a>
+        <p class="foot">Sit. Breathe. Begin.</p>
+      </div>
+    </section>
+
+    <section id="japa" class="view"><iframe data-src="practices/japa.html" title="Japa Mala"></iframe></section>
+    <section id="path" class="view"><iframe data-src="practices/path.html" title="Lyric Path"></iframe></section>
+    <section id="puja" class="view"><iframe data-src="practices/puja.html" title="Manas Puja"></iframe></section>
+    <section id="murti" class="view"><iframe data-src="practices/murti.html" title="Living Murti"></iframe></section>
+  </main>
+
+  <nav aria-label="Practices">
+    <a href="#home" data-route="home" class="active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1z"/></svg>
+      Home
+    </a>
+    <a href="#japa" data-route="japa">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><circle cx="12" cy="12" r="9"/></svg>
+      Japa
+    </a>
+    <a href="#path" data-route="path">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 0-3 3V4z"/><path d="M8 4v16"/></svg>
+      Path
+    </a>
+    <a href="#puja" data-route="puja">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3c2 3.2 3 5.4 3 7.2A3 3 0 1 1 9 10.2C9 8.4 10 6.2 12 3z"/><path d="M8 18c.6-1.4 2-2 4-2s3.4.6 4 2"/></svg>
+      Puja
+    </a>
+    <a href="#murti" data-route="murti">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 4c2.5 3.2 6 5.2 6 8.4A6 6 0 0 1 6 12.4C6 9.2 9.5 7.2 12 4z"/><path d="M8.5 14.5c.8 1.6 2 2.5 3.5 2.5s2.7-.9 3.5-2.5"/></svg>
+      Murti
+    </a>
+  </nav>
+</div>
+<script>
+(function(){
+  const routes = ['home','japa','path','puja','murti'];
+  function show(id){
+    if(!routes.includes(id)) id = 'home';
+    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id===id));
+    document.querySelectorAll('nav a').forEach(a => a.classList.toggle('active', a.dataset.route===id));
+    const view = document.getElementById(id);
+    const frame = view && view.querySelector('iframe[data-src]');
+    if(frame && !frame.getAttribute('src')){
+      frame.setAttribute('src', frame.getAttribute('data-src'));
+    }
+  }
+  function fromHash(){
+    const id = (location.hash || '#home').replace('#','') || 'home';
+    show(id);
+  }
+  window.addEventListener('hashchange', fromHash);
+  fromHash();
+})();
+</script>
+</body>
+</html>

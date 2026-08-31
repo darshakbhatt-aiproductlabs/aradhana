@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-night: #100e0c;
+  --color-night-elevated: #1a1612;
+  --color-night-subtle: #241e18;
+  --color-cream: #f3ece2;
+  --color-cream-muted: #b8a99a;
+  --color-cream-subtle: #8a7b6c;
+  --color-vermillion: #c45c3e;
+  --color-vermillion-deep: #9a3f28;
+  --color-sacred: #d4b483;
+  --color-border: rgb(243 236 226 / 0.12);
+  --color-border-strong: rgb(243 236 226 / 0.22);
+
+  --font-display: "Cinzel", ui-serif, Georgia, serif;
+  --font-dev: "Noto Sans Devanagari", "Nunito", system-ui, sans-serif;
+  --font-sans: "Nunito", "Noto Sans Devanagari", system-ui, sans-serif;
+
+  --radius-sm: 0.5rem;
+  --radius-md: 0.75rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.5rem;
+
+  --shadow-panel:
+    0 0 0 1px rgb(243 236 226 / 0.08),
+    0 18px 40px -24px rgb(0 0 0 / 0.7);
+}
+
+.sanctum-wash {
+  background-image: url("/deities/sanctum.webp");
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  html,
+  body,
+  #app {
+    min-height: 100%;
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-night);
+    color: var(--color-cream);
+    font-family: var(--font-sans);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

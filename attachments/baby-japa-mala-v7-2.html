@@ -1,0 +1,2085 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1">
+<title>Baby Japa Mala V7 · बच्चों का प्यारा मंत्र जप</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Fredoka:wght@400;500;600&family=Nunito:wght@500;600;700;800&family=Quicksand:wght@500;600;700&family=Comfortaa:wght@500;600;700&family=Noto+Sans+Devanagari:wght@500;600;700;800&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg1: #fff6e8; --bg2: #ffe8f0; --bg3: #e8f4ff;
+    --accent: #ff7a5c; --accent-soft: #ffb8a0; --accent-deep: #e04a30;
+    --gold: #f0b040; --gold-light: #ffe0a0;
+    --ink: #3a2f4a; --mist: rgba(58,47,74,0.58);
+    --core-start: rgba(255,255,255,0.94);
+    --core-mid: rgba(255,245,235,0.9);
+    --core-end: rgba(255,225,210,0.8);
+    --bead-base: #f5d0c0; --bead-base-highlight: #fff0e8;
+    --bead-lit: #ffd060; --bead-lit-core: #fff8e0;
+    --ui-font: 'Nunito', system-ui, sans-serif;
+    --count-font: 'Noto Sans Devanagari', 'Baloo 2', system-ui, sans-serif;
+    --ring-size: min(84vw, 420px);
+    --bead-size: 13px; --meru-size: 22px;
+    --safe-top: max(12px, env(safe-area-inset-top));
+    --safe-bot: max(12px, env(safe-area-inset-bottom));
+  }
+
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    font-family: var(--ui-font);
+    color: var(--ink);
+    background: linear-gradient(165deg, var(--bg1), var(--bg2) 45%, var(--bg3));
+    overflow: hidden;
+    transition: background 0.45s ease;
+  }
+  #app{ position:relative; width:100vw; height:100vh; height:100dvh; overflow:hidden; }
+
+  .view{
+    position:absolute; inset:0;
+    display:none; flex-direction:column;
+    opacity:0; transition:opacity 0.35s ease; z-index:1;
+  }
+  .view.active{ display:flex; opacity:1; z-index:10; }
+
+  /* ========== SETUP ========== */
+  #view-setup{
+    padding: var(--safe-top) 16px var(--safe-bot);
+    overflow-y:auto; -webkit-overflow-scrolling:touch; align-items:center;
+  }
+  .setup-inner{ width:100%; max-width:420px; margin:0 auto; padding-bottom:28px; }
+  .setup-hero{ text-align:center; margin:8px 0 18px; }
+  .setup-hero .emoji{ font-size:40px; line-height:1; }
+  .setup-hero h1{
+    font-family: var(--count-font);
+    font-size:26px; font-weight:800; margin:6px 0 2px;
+    color: var(--accent-deep); letter-spacing:-0.02em;
+  }
+  .setup-hero p{ font-size:13.5px; font-weight:600; color:var(--mist); margin:0; }
+
+  .card{
+    background:rgba(255,255,255,0.84);
+    backdrop-filter:blur(14px);
+    border-radius:18px;
+    border:2px solid color-mix(in srgb, var(--accent-soft) 40%, transparent);
+    padding:14px 14px 12px; margin-bottom:12px;
+    box-shadow:0 5px 18px color-mix(in srgb, var(--accent) 9%, transparent);
+  }
+  .card-title{
+    font-size:11.5px; font-weight:700; letter-spacing:0.06em;
+    text-transform:uppercase; color:var(--mist); margin:0 0 9px;
+  }
+
+  #setupMantra{
+    width:100%;
+    font-family: var(--ui-font), 'Noto Sans Devanagari', sans-serif;
+    font-size:16px; font-weight:700; text-align:center;
+    border:2px solid color-mix(in srgb, var(--accent-soft) 50%, transparent);
+    border-radius:13px; padding:11px 12px;
+    background:rgba(255,255,255,0.7); color:var(--accent-deep); outline:none;
+    letter-spacing: 0.02em;
+  }
+  #setupMantra:focus{ border-color:var(--accent); }
+
+  /* Backdrop upload on setup */
+  .backdrop-row{ display:flex; gap:8px; align-items:center; }
+  .backdrop-btn{
+    flex:1; font-family:var(--ui-font); font-size:13px; font-weight:600;
+    padding:11px 10px; border-radius:13px; cursor:pointer;
+    border:2px dashed color-mix(in srgb, var(--accent-soft) 60%, transparent);
+    background:rgba(255,255,255,0.55); color:var(--ink);
+    transition:all 0.2s;
+  }
+  .backdrop-btn:hover{ border-color:var(--accent); color:var(--accent-deep); }
+  #setupBgStatus{
+    font-size:12px; font-weight:600; color:var(--mist);
+    margin-top:8px; text-align:center; min-height:18px;
+  }
+
+  .font-grid{ display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+  .font-btn{
+    font-size:13.5px; font-weight:600; padding:10px 6px; border-radius:12px;
+    border:2px solid color-mix(in srgb, var(--accent-soft) 45%, transparent);
+    background:rgba(255,255,255,0.7); color:var(--ink); cursor:pointer; transition:all 0.2s;
+  }
+  .font-btn:hover{ border-color:var(--accent); }
+  .font-btn.active{
+    background:color-mix(in srgb, var(--accent-soft) 32%, white);
+    border-color:var(--accent); color:var(--accent-deep);
+    box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 22%, transparent);
+  }
+  .font-btn[data-font="Baloo 2"]{ font-family:'Baloo 2',sans-serif; }
+  .font-btn[data-font="Fredoka"]{ font-family:'Fredoka',sans-serif; }
+  .font-btn[data-font="Nunito"]{ font-family:'Nunito',sans-serif; }
+  .font-btn[data-font="Quicksand"]{ font-family:'Quicksand',sans-serif; }
+  .font-btn[data-font="Comfortaa"]{ font-family:'Comfortaa',sans-serif; }
+  .font-btn[data-font="Plus Jakarta"]{ font-family:'Plus Jakarta Sans',sans-serif; }
+  .font-btn[data-font="Noto"]{ font-family:'Noto Sans Devanagari',sans-serif; }
+
+  .theme-row{ display:flex; flex-wrap:wrap; gap:9px; justify-content:center; }
+  .theme-dot{
+    width:32px; height:32px; border-radius:50%;
+    border:3px solid rgba(255,255,255,0.95); cursor:pointer;
+    transition:transform 0.2s cubic-bezier(.34,1.56,.64,1);
+    box-shadow:0 2px 8px rgba(0,0,0,0.12);
+  }
+  .theme-dot:hover{ transform:scale(1.12); }
+  .theme-dot.active{ transform:scale(1.16); box-shadow:0 0 0 3px var(--accent), 0 2px 10px rgba(0,0,0,0.16); }
+
+  .slider-block{ margin-top:11px; }
+  .slider-label{
+    display:flex; justify-content:space-between;
+    font-size:11.5px; font-weight:600; color:var(--mist); margin-bottom:5px;
+  }
+  input[type="range"]{
+    width:100%; height:7px; -webkit-appearance:none; appearance:none;
+    border-radius:99px;
+    background:linear-gradient(to right,hsl(0,70%,75%),hsl(60,70%,75%),hsl(120,70%,75%),hsl(180,70%,75%),hsl(240,70%,75%),hsl(300,70%,75%),hsl(360,70%,75%));
+    outline:none;
+  }
+  input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none; width:20px; height:20px; border-radius:50%;
+    background:#fff; border:3px solid var(--accent);
+    box-shadow:0 2px 7px rgba(0,0,0,0.2); cursor:pointer;
+  }
+
+  .start-btn{
+    display:block; width:100%; margin-top:6px; padding:15px;
+    border:none; border-radius:16px;
+    font-family:var(--count-font); font-size:19px; font-weight:700;
+    color:#fff; background:linear-gradient(135deg, var(--accent), var(--accent-deep));
+    box-shadow:0 7px 22px color-mix(in srgb, var(--accent) 38%, transparent);
+    cursor:pointer; transition:transform 0.2s, filter 0.2s;
+  }
+  .start-btn:hover{ filter:brightness(1.05); transform:translateY(-1px); }
+  .start-btn:active{ transform:scale(0.98); }
+
+  /* ========== SHARED UI ========== */
+  #topbar{
+    position:absolute; top:0; left:0; right:0;
+    display:flex; justify-content:flex-start; align-items:flex-start;
+    /* leave clear space on the right for the tiny focus arrow */
+    padding: var(--safe-top) 36px 0 10px;
+    z-index:30; gap:5px; pointer-events:none;
+  }
+  #topbar > *{ pointer-events:auto; }
+  .top-left, .top-right{
+    display:flex; flex-wrap:wrap; gap:5px; align-items:center;
+  }
+  .pill-btn{
+    font-family:var(--ui-font); font-size:11.5px; font-weight:600; color:var(--ink);
+    background:rgba(255,255,255,0.84);
+    border:2px solid color-mix(in srgb, var(--accent-soft) 50%, transparent);
+    backdrop-filter:blur(10px); border-radius:999px; padding:7px 11px;
+    cursor:pointer; transition:all 0.2s; display:flex; align-items:center; gap:3px;
+    box-shadow:0 2px 9px color-mix(in srgb, var(--accent) 9%, transparent);
+  }
+  .pill-btn:hover{ border-color:var(--accent); color:var(--accent-deep); }
+  .visually-hidden{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
+
+  #styleBar{
+    position:absolute; top:calc(var(--safe-top) + 46px); left:50%;
+    transform:translateX(-50%); z-index:28;
+    display:flex; align-items:center; gap:5px; padding:5px 7px;
+    background:rgba(255,255,255,0.9); backdrop-filter:blur(12px);
+    border-radius:999px; border:2px solid color-mix(in srgb, var(--accent-soft) 38%, transparent);
+    box-shadow:0 3px 14px rgba(0,0,0,0.05); max-width:96vw; overflow-x:auto;
+  }
+  #styleBar .theme-dot{ width:18px; height:18px; flex-shrink:0; }
+  .style-divider{ width:1px; height:14px; background:color-mix(in srgb, var(--accent-soft) 55%, transparent); margin:0 2px; }
+  .mini-font{
+    font-size:10.5px; font-weight:700; padding:3px 7px; border-radius:999px;
+    border:1.5px solid color-mix(in srgb, var(--accent-soft) 48%, transparent);
+    background:rgba(255,255,255,0.6); color:var(--ink); cursor:pointer; white-space:nowrap;
+  }
+  .mini-font.active{ background:color-mix(in srgb, var(--accent-soft) 38%, white); border-color:var(--accent); color:var(--accent-deep); }
+
+  /* ========== JAPA VIEW ========== */
+  #backdrop{
+    position:absolute; inset:0;
+    background:
+      radial-gradient(ellipse at 20% 15%, color-mix(in srgb, var(--accent-soft) 28%, transparent), transparent 50%),
+      radial-gradient(ellipse at 80% 20%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 45%),
+      linear-gradient(165deg, var(--bg1), var(--bg2) 40%, var(--bg3));
+    transition:background 0.45s ease;
+  }
+  #backdrop img, #backdrop video{
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:cover;
+    /* Preserve original sharpness – no browser downsampling */
+    image-rendering: auto;
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+    opacity:0; transition:opacity 1.1s ease;
+  }
+  #backdrop.has-image img{ opacity:1; }
+  #backdrop.has-video video{ opacity:1; }
+  #scrim{
+    position:absolute; inset:0;
+    background:radial-gradient(ellipse 70% 60% at 50% 58%, rgba(255,255,255,0.04), rgba(0,0,0,0.05) 100%);
+    pointer-events:none; transition:opacity 1.2s ease;
+  }
+
+  .float-spark{ position:absolute; pointer-events:none; z-index:4; font-size:12px; opacity:0.42; animation:floatUp 9s ease-in-out infinite; }
+  @keyframes floatUp{ 0%,100%{transform:translateY(0) scale(1);opacity:0.28;} 50%{transform:translateY(-13px) scale(1.1);opacity:0.6;} }
+
+  #emptyHint{
+    position:absolute; left:50%; top:21%; transform:translateX(-50%);
+    font-size:13px; font-weight:600; color:var(--mist); text-align:center;
+    max-width:250px; z-index:12; line-height:1.4;
+  }
+
+  #malaWrap{
+    position:absolute; left:50%; bottom:max(68px, calc(var(--safe-bot) + 56px));
+    transform:translateX(-50%); width:var(--ring-size); height:var(--ring-size);
+    z-index:15; transition:opacity 1.6s ease, filter 1.6s ease;
+  }
+  #ring{ position:relative; width:100%; height:100%; border-radius:50%; }
+
+  .bead{
+    position:absolute; width:var(--bead-size); height:var(--bead-size); border-radius:50%;
+    background:radial-gradient(circle at 32% 28%, var(--bead-base-highlight), var(--bead-base) 60%, color-mix(in srgb, var(--bead-base) 75%, #999) 100%);
+    box-shadow:0 2px 4px rgba(0,0,0,0.15), 0 0 0 1.5px rgba(255,255,255,0.4) inset;
+    transition:background 0.35s ease, box-shadow 0.35s ease, transform 0.28s cubic-bezier(.34,1.56,.64,1);
+  }
+  .bead:nth-child(6n+1){ --local:#f8c8c0; background:radial-gradient(circle at 32% 28%,#fff0e8,var(--local) 55%,color-mix(in srgb,var(--local) 80%,#a08080) 100%); }
+  .bead:nth-child(6n+2){ --local:#c0d8f8; background:radial-gradient(circle at 32% 28%,#f0f8ff,var(--local) 55%,color-mix(in srgb,var(--local) 80%,#8090b0) 100%); }
+  .bead:nth-child(6n+3){ --local:#b8e8c8; background:radial-gradient(circle at 32% 28%,#f0fff4,var(--local) 55%,color-mix(in srgb,var(--local) 80%,#70a080) 100%); }
+  .bead:nth-child(6n+4){ --local:#f8d8b0; background:radial-gradient(circle at 32% 28%,#fff8f0,var(--local) 55%,color-mix(in srgb,var(--local) 80%,#b09060) 100%); }
+  .bead:nth-child(6n+5){ --local:#d8c0f0; background:radial-gradient(circle at 32% 28%,#f8f0ff,var(--local) 55%,color-mix(in srgb,var(--local) 80%,#9070b0) 100%); }
+  .bead:nth-child(6n)  { --local:#f0c0d0; background:radial-gradient(circle at 32% 28%,#fff0f4,var(--local) 55%,color-mix(in srgb,var(--local) 80%,#b07090) 100%); }
+
+  .bead.meru{
+    width:var(--meru-size); height:var(--meru-size);
+    background:radial-gradient(circle at 32% 28%, var(--gold-light), var(--gold) 55%, color-mix(in srgb, var(--gold) 70%, #a06000) 100%);
+    box-shadow:0 0 13px 4px color-mix(in srgb, var(--gold) 48%, transparent), 0 2px 7px rgba(0,0,0,0.16), 0 0 0 2px rgba(255,255,255,0.55) inset;
+  }
+  .bead.lit{
+    background:radial-gradient(circle at 30% 25%, var(--bead-lit-core), var(--bead-lit) 45%, color-mix(in srgb, var(--bead-lit) 80%, #c06000) 100%) !important;
+    box-shadow:0 0 10px 3px color-mix(in srgb, var(--bead-lit) 62%, transparent), 0 0 18px 5px color-mix(in srgb, var(--bead-lit) 28%, transparent), 0 0 0 1.5px rgba(255,255,255,0.7) inset;
+  }
+  .bead.meru.lit{
+    background:radial-gradient(circle at 30% 25%, #fffef5, var(--gold-light) 40%, var(--gold) 100%) !important;
+    box-shadow:0 0 16px 5px color-mix(in srgb, var(--gold) 68%, transparent), 0 0 28px 8px color-mix(in srgb, var(--gold) 32%, transparent), 0 0 0 2px rgba(255,255,255,0.8) inset;
+  }
+  .bead.active{ transform:scale(2.0); z-index:6; }
+
+  /* ===== Bead style variants ===== */
+  body.bead-wood .bead:nth-child(n){
+    background: radial-gradient(circle at 30% 28%, #e8c9a0, #c49a6c 55%, #8b5e3c 100%) !important;
+    box-shadow: 0 2px 4px rgba(80,40,10,0.3), 0 0 0 1px rgba(255,220,180,0.35) inset;
+  }
+  body.bead-wood .bead.lit{
+    background: radial-gradient(circle at 30% 25%, #fff0d0, #e8b060 45%, #c07820 100%) !important;
+    box-shadow: 0 0 10px 3px rgba(232,176,80,0.55), 0 0 0 1.5px rgba(255,240,200,0.6) inset !important;
+  }
+  body.bead-pearl .bead:nth-child(n){
+    background: radial-gradient(circle at 32% 28%, #ffffff, #f0f4f8 50%, #d0d8e0 100%) !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.12), 0 0 0 1.5px rgba(255,255,255,0.8) inset;
+  }
+  body.bead-pearl .bead.lit{
+    background: radial-gradient(circle at 30% 25%, #ffffff, #e8f4ff 40%, #a0d0ff 100%) !important;
+    box-shadow: 0 0 12px 4px rgba(160,200,255,0.6), 0 0 0 1.5px #fff inset !important;
+  }
+  body.bead-gold .bead:nth-child(n){
+    background: radial-gradient(circle at 32% 28%, #fff6d0, #f0c040 50%, #c09010 100%) !important;
+    box-shadow: 0 2px 4px rgba(120,80,0,0.25), 0 0 0 1.5px rgba(255,240,180,0.5) inset;
+  }
+  body.bead-gold .bead.lit{
+    background: radial-gradient(circle at 30% 25%, #fffef0, #ffe080 40%, #f0b020 100%) !important;
+    box-shadow: 0 0 12px 4px rgba(255,200,60,0.7), 0 0 0 1.5px #fff8e0 inset !important;
+  }
+  body.bead-crystal .bead:nth-child(n){
+    background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.95), rgba(200,230,255,0.7) 50%, rgba(160,200,255,0.5) 100%) !important;
+    box-shadow: 0 2px 6px rgba(100,150,220,0.25), 0 0 0 1.5px rgba(255,255,255,0.7) inset;
+    backdrop-filter: blur(1px);
+  }
+  body.bead-crystal .bead.lit{
+    background: radial-gradient(circle at 30% 25%, #ffffff, #c8e8ff 45%, #80c0ff 100%) !important;
+    box-shadow: 0 0 14px 5px rgba(120,180,255,0.65), 0 0 0 1.5px #fff inset !important;
+  }
+  body.bead-candy .bead:nth-child(6n+1){ background:radial-gradient(circle at 32% 28%,#fff,#ff8ec8 60%,#e050a0 100%) !important; }
+  body.bead-candy .bead:nth-child(6n+2){ background:radial-gradient(circle at 32% 28%,#fff,#8ec8ff 60%,#4080e0 100%) !important; }
+  body.bead-candy .bead:nth-child(6n+3){ background:radial-gradient(circle at 32% 28%,#fff,#8effc0 60%,#30c080 100%) !important; }
+  body.bead-candy .bead:nth-child(6n+4){ background:radial-gradient(circle at 32% 28%,#fff,#ffe08e 60%,#e0b030 100%) !important; }
+  body.bead-candy .bead:nth-child(6n+5){ background:radial-gradient(circle at 32% 28%,#fff,#d0a0ff 60%,#9050e0 100%) !important; }
+  body.bead-candy .bead:nth-child(6n)  { background:radial-gradient(circle at 32% 28%,#fff,#ffb080 60%,#e07040 100%) !important; }
+  body.bead-candy .bead.lit{
+    background: radial-gradient(circle at 30% 25%, #ffffff, #ffe080 40%, #ffb020 100%) !important;
+    box-shadow: 0 0 12px 4px rgba(255,180,60,0.7), 0 0 0 1.5px #fff inset !important;
+  }
+
+  /* Layout: Arc – beads along bottom curve, core above */
+  body.layout-arc #malaWrap{
+    width: min(92vw, 460px);
+    height: min(48vw, 240px);
+    bottom: max(70px, calc(var(--safe-bot) + 58px));
+  }
+  body.layout-arc #core{
+    top: 38%;
+    width: 58%;
+    height: 70%;
+  }
+  body.layout-arc.focus-mode #malaWrap{
+    bottom: max(28px, var(--safe-bot));
+  }
+
+  /* Layout: Strand – vertical-ish column of beads on the right of core */
+  body.layout-strand #malaWrap{
+    width: min(70vw, 340px);
+    height: min(78vw, 420px);
+    bottom: max(60px, calc(var(--safe-bot) + 50px));
+  }
+  body.layout-strand #core{
+    left: 38%;
+    top: 50%;
+    width: 62%;
+    height: 52%;
+  }
+
+  /* Layout: Ring progress – minimal, beads as outer progress only */
+  body.layout-ring #malaWrap{
+    width: var(--ring-size);
+    height: var(--ring-size);
+  }
+  body.layout-ring .bead{
+    opacity: 0.35;
+  }
+  body.layout-ring .bead.lit{
+    opacity: 1;
+  }
+
+  /* ===== SCOREBOARD MODE – full-width bottom, highly transparent ===== */
+  body.mode-scoreboard #malaWrap{ display: none !important; }
+  body.mode-scoreboard #scoreboard{ display: flex; }
+
+  #scoreboard{
+    display: none;
+    position: absolute;
+    left: 0;
+    right: 0;
+    /* sit above the Reset / Cinematic buttons */
+    bottom: max(52px, calc(var(--safe-bot) + 44px));
+    top: auto;
+    width: 100%;
+    transform: none;
+    flex-direction: column;
+    align-items: stretch;
+    z-index: 15;
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  body.focus-mode #scoreboard,
+  body.cinematic-active #scoreboard{
+    bottom: max(8px, var(--safe-bot));
+  }
+
+  .sb-frame{
+    width: 100%;
+    margin: 0;
+    padding: 14px 16px 12px;
+    border-radius: 0;
+    border: none;
+    border-top: 1px solid rgba(255,255,255,0.18);
+    background: rgba(255, 255, 255, 0.28);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: none;
+  }
+  .sb-mantra{
+    font-family: var(--ui-font), 'Noto Sans Devanagari', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--accent-deep);
+    text-align: center;
+    margin-bottom: 4px;
+    min-height: 18px;
+    outline: none;
+  }
+  .sb-mantra:empty::before{
+    content: attr(data-placeholder);
+    color: color-mix(in srgb, var(--ink) 40%, transparent);
+    font-style: italic;
+  }
+  .sb-row{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .sb-digits{
+    font-family: var(--count-font);
+    font-weight: 800;
+    font-size: min(16vw, 64px);
+    line-height: 1;
+    color: var(--ink);
+    text-align: center;
+    letter-spacing: 0.03em;
+    font-variant-numeric: tabular-nums;
+    transition: transform 0.15s cubic-bezier(.34,1.56,.64,1), opacity 0.15s;
+  }
+  .sb-digits.bump{ transform: scale(1.08); }
+  .sb-digits.tick{ animation: clockTick 0.3s ease-out; }
+  @keyframes clockTick{
+    0%{ transform: translateY(8px); opacity: 0.35; }
+    55%{ transform: translateY(-2px); opacity: 1; }
+    100%{ transform: translateY(0); opacity: 1; }
+  }
+  .sb-slash{
+    font-size: min(8vw, 32px);
+    font-weight: 700;
+    color: var(--mist);
+    opacity: 0.7;
+  }
+  .sb-total-big{
+    font-family: var(--count-font);
+    font-weight: 700;
+    font-size: min(10vw, 36px);
+    color: var(--mist);
+    font-variant-numeric: tabular-nums;
+  }
+  .sb-of{ display: none; } /* used only in some layouts via CSS override */
+  .sb-bar-wrap{
+    margin-top: 10px;
+    height: 4px;
+    border-radius: 99px;
+    background: rgba(0,0,0,0.08);
+    overflow: hidden;
+  }
+  .sb-bar{
+    height: 100%;
+    width: 0%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, var(--accent), var(--gold));
+    transition: width 0.25s ease;
+  }
+  .sb-hint{ display: none !important; }
+
+  /* Hide structural pieces by default; each style reveals what it needs */
+  .sb-stadium-box, .sb-clock-face, .sb-ring-wrap{ display: none; }
+
+  /* ========== STRUCTURAL STYLE: BAR (default full-width strip) ========== */
+  /* already the base layout above */
+
+  /* ========== STRUCTURAL STYLE: STADIUM (two big score boxes) ========== */
+  body.sb-stadium .sb-frame{
+    background: rgba(255,255,255,0.25);
+    padding: 12px 12px 10px;
+  }
+  body.sb-stadium .sb-row{ display: none; }
+  body.sb-stadium .sb-bar-wrap{ display: none; }
+  body.sb-stadium .sb-stadium-box{
+    display: flex;
+    gap: 10px;
+    width: 100%;
+  }
+  body.sb-stadium .sb-box{
+    flex: 1;
+    text-align: center;
+    padding: 10px 8px;
+    border-radius: 14px;
+    background: rgba(255,255,255,0.35);
+    border: 1px solid rgba(255,255,255,0.35);
+  }
+  body.sb-stadium .sb-box-label{
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--mist);
+    margin-bottom: 4px;
+  }
+  body.sb-stadium .sb-box-num{
+    font-family: var(--count-font);
+    font-weight: 800;
+    font-size: min(14vw, 52px);
+    line-height: 1;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+  }
+  body.sb-stadium .sb-box-num.tick{ animation: clockTick 0.3s ease-out; }
+
+  /* ========== STRUCTURAL STYLE: CLOCK (digital clock module) ========== */
+  body.sb-clock .sb-frame{
+    background: rgba(12, 14, 20, 0.32);
+    border-top: 1px solid rgba(255,255,255,0.12);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 16px 14px;
+  }
+  body.sb-clock .sb-row{ display: none; }
+  body.sb-clock .sb-mantra{ color: rgba(255,255,255,0.65); }
+  body.sb-clock .sb-clock-face{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 12px 20px;
+    border-radius: 12px;
+    background: rgba(0,0,0,0.35);
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: inset 0 2px 8px rgba(0,0,0,0.35);
+  }
+  body.sb-clock .sb-clock-digit{
+    font-family: 'Courier New', 'Noto Sans Devanagari', monospace;
+    font-weight: 800;
+    font-size: min(14vw, 56px);
+    line-height: 1;
+    color: #7CFFB2;
+    text-shadow: 0 0 10px rgba(80,255,160,0.55);
+    letter-spacing: 0.06em;
+    font-variant-numeric: tabular-nums;
+    min-width: 0.9em;
+    text-align: center;
+  }
+  body.sb-clock .sb-clock-digit.tick{ animation: clockTick 0.3s ease-out; }
+  body.sb-clock .sb-clock-sep{
+    font-family: 'Courier New', monospace;
+    font-size: min(10vw, 40px);
+    color: rgba(124,255,178,0.45);
+    padding: 0 2px;
+  }
+  body.sb-clock .sb-bar-wrap{
+    width: min(70%, 280px);
+    margin-top: 12px;
+    background: rgba(255,255,255,0.1);
+  }
+  body.sb-clock .sb-bar{ background: linear-gradient(90deg, #2ecc71, #a8ff78); }
+
+  /* ========== STRUCTURAL STYLE: RING (circular progress) ========== */
+  body.sb-ring .sb-frame{
+    background: rgba(255,255,255,0.22);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 14px 16px 16px;
+  }
+  body.sb-ring .sb-row{ display: none; }
+  body.sb-ring .sb-bar-wrap{ display: none; }
+  body.sb-ring .sb-ring-wrap{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    width: 120px;
+    height: 120px;
+  }
+  body.sb-ring .sb-ring-svg{
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+  }
+  body.sb-ring .sb-ring-bg{
+    fill: none;
+    stroke: rgba(0,0,0,0.08);
+    stroke-width: 8;
+  }
+  body.sb-ring .sb-ring-fg{
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 8;
+    stroke-linecap: round;
+    stroke-dasharray: 339.3;
+    stroke-dashoffset: 339.3;
+    transition: stroke-dashoffset 0.3s ease;
+  }
+  body.sb-ring .sb-ring-num{
+    position: relative;
+    z-index: 1;
+    font-family: var(--count-font);
+    font-weight: 800;
+    font-size: 36px;
+    color: var(--ink);
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+  body.sb-ring .sb-ring-num.tick{ animation: clockTick 0.3s ease-out; }
+  body.sb-ring .sb-ring-total{
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--mist);
+    margin-top: 6px;
+  }
+
+  /* ========== STRUCTURAL STYLE: MINIMAL (huge number only) ========== */
+  body.sb-minimal .sb-frame{
+    background: rgba(255,255,255,0.18);
+    border-top: 1px solid rgba(255,255,255,0.15);
+    padding: 18px 16px 16px;
+  }
+  body.sb-minimal .sb-slash,
+  body.sb-minimal .sb-total-big,
+  body.sb-minimal .sb-bar-wrap{ display: none; }
+  body.sb-minimal .sb-digits{
+    font-size: min(22vw, 88px);
+    color: var(--accent-deep);
+  }
+  body.sb-minimal .sb-mantra{
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+
+  #core{
+    position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
+    width:66%; height:66%; border-radius:50%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    cursor:pointer;
+    background:radial-gradient(circle at 50% 32%, var(--core-start), var(--core-mid) 55%, var(--core-end) 100%);
+    box-shadow:0 0 0 5px color-mix(in srgb, var(--accent-soft) 24%, transparent),
+               0 0 0 10px color-mix(in srgb, var(--accent) 8%, transparent),
+               0 7px 22px color-mix(in srgb, var(--accent) 15%, transparent);
+    -webkit-user-select:none; user-select:none;
+    transition:transform 0.2s cubic-bezier(.34,1.56,.64,1);
+  }
+  #core:active{ transform:translate(-50%,-50%) scale(0.97); }
+  #core.locked{ cursor:default; }
+
+  #mantraLabel{
+    font-family: var(--ui-font), 'Noto Sans Devanagari', sans-serif;
+    font-size:14px; font-weight:700; letter-spacing:0.04em;
+    color:var(--accent-deep); text-align:center; outline:none;
+    padding:2px 6px; border-radius:9px; min-width:36px; cursor:text;
+    background:rgba(255,255,255,0.32);
+  }
+  #mantraLabel:focus{ background:color-mix(in srgb, var(--accent-soft) 28%, white); }
+  #mantraLabel:empty::before{ content:attr(data-placeholder); color:color-mix(in srgb, var(--ink) 36%, transparent); font-style:italic; }
+
+  #divider{ width:38px; height:2px; background:linear-gradient(90deg,transparent,color-mix(in srgb,var(--accent) 58%,transparent),transparent); margin:2px 0 1px; }
+
+  /* Number count – carefully tuned for clean Devanagari digits (especially ८) */
+  #count{
+    font-family: var(--count-font);
+    font-weight: 800;
+    font-size: min(17vw, 76px);
+    line-height: 1.05;
+    color: var(--accent-deep);
+    letter-spacing: 0.01em;          /* slight positive tracking helps ८ */
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: "tnum" 1;
+    text-rendering: geometricPrecision;
+    -webkit-font-smoothing: antialiased;
+    text-shadow: 0 1px 0 color-mix(in srgb, var(--accent-soft) 40%, white);
+    transition: transform 0.16s cubic-bezier(.34,1.56,.64,1);
+  }
+  #count.bump{ transform:scale(1.07); }
+
+  #ofLabel{ font-size:11.5px; font-weight:600; color:var(--mist); margin-top:-1px; }
+  #totalLabel{
+    font-family: var(--count-font);
+    font-weight:700; font-size:19px; color:var(--accent);
+    font-variant-numeric:tabular-nums; letter-spacing:0.01em;
+  }
+  #lotus{ margin-top:3px; font-size:17px; }
+
+  #controls{
+    position:absolute; left:50%; bottom:var(--safe-bot);
+    transform:translateX(-50%); display:flex; gap:8px; z-index:25; padding-bottom:3px;
+  }
+  .ctrl{
+    font-family:var(--ui-font); font-size:12px; font-weight:600; color:var(--ink);
+    background:rgba(255,255,255,0.86);
+    border:2px solid color-mix(in srgb, var(--accent-soft) 44%, transparent);
+    border-radius:13px; padding:8px 13px; cursor:pointer;
+    backdrop-filter:blur(8px); box-shadow:0 2px 10px color-mix(in srgb, var(--accent) 9%, transparent);
+    transition:all 0.2s;
+  }
+  .ctrl:hover{ color:var(--accent-deep); border-color:var(--accent); }
+  .ctrl.primary{
+    color:#fff; background:linear-gradient(135deg, var(--accent), var(--accent-deep));
+    border-color:transparent; box-shadow:0 4px 14px color-mix(in srgb, var(--accent) 32%, transparent);
+  }
+  .ctrl:disabled{ opacity:0.4; cursor:not-allowed; }
+
+  #cinematicHeader{
+    position:absolute; top:0; left:0; right:0;
+    display:flex; align-items:center; gap:5px;
+    padding:var(--safe-top) 9px 9px;
+    background:linear-gradient(180deg, rgba(255,255,255,0.93) 0%, rgba(255,255,255,0.55) 75%, transparent 100%);
+    backdrop-filter:blur(12px);
+    border-bottom:2px solid color-mix(in srgb, var(--accent-soft) 26%, transparent);
+    z-index:60; opacity:0; pointer-events:none; transition:opacity 0.3s ease;
+  }
+  #cinematicHeader.show{ opacity:1; pointer-events:auto; }
+  .cin-icon-btn{
+    width:34px; height:34px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; font-size:13px;
+    color:var(--ink); background:rgba(255,255,255,0.9);
+    border:2px solid color-mix(in srgb, var(--accent-soft) 44%, transparent); cursor:pointer;
+  }
+  .cin-icon-btn:hover{ border-color:var(--accent); color:var(--accent-deep); }
+  .cin-icon-btn:disabled{ opacity:0.35; }
+  .speed-wrap{
+    display:flex; align-items:center; gap:4px;
+    background:rgba(255,255,255,0.88);
+    border:2px solid color-mix(in srgb, var(--accent-soft) 38%, transparent);
+    border-radius:999px; padding:4px 9px;
+  }
+  .speed-label{ font-size:9.5px; font-weight:700; color:var(--mist); text-transform:uppercase; }
+  #speedSlider{ width:64px; accent-color:var(--accent); }
+  #speedValue{ font-size:11.5px; font-weight:700; color:var(--accent-deep); min-width:26px; text-align:right; }
+  .cin-spacer{ flex:1; }
+
+  body.cinematic-active #topbar,
+  body.cinematic-active #styleBar,
+  body.cinematic-active #controls,
+  body.cinematic-active #emptyHint,
+  body.cinematic-active #musicStatus{ opacity:0; pointer-events:none; }
+  body.cinematic-active #malaWrap{
+    --ring-size: min(88vw, 62vh, 480px);
+    bottom: max(36px, var(--safe-bot));
+  }
+  body.reveal-image #scrim{ opacity:0.04; }
+  #malaWrap.dissolve{ opacity:0; filter:blur(7px); pointer-events:none; }
+
+  /* Focus / Clean mode – hide trays for full-screen japa */
+  body.focus-mode #topbar,
+  body.focus-mode #styleBar,
+  body.focus-mode #controls,
+  body.focus-mode #emptyHint,
+  body.focus-mode #musicStatus{
+    opacity: 0;
+    pointer-events: none;
+  }
+  body.focus-mode #malaWrap{
+    bottom: max(28px, var(--safe-bot));
+  }
+
+  /* Tiny arrow toggle – top right, easy to crop while recording */
+  #focusToggle{
+    position: absolute;
+    top: max(8px, env(safe-area-inset-top));
+    right: 8px;
+    z-index: 55;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: none;
+    background: rgba(255,255,255,0.55);
+    backdrop-filter: blur(6px);
+    color: var(--ink);
+    font-size: 11px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.7;
+    transition: opacity 0.2s, background 0.2s;
+    padding: 0;
+  }
+  #focusToggle:hover{ opacity: 1; background: rgba(255,255,255,0.85); }
+  body.cinematic-active #focusToggle{ opacity: 0; pointer-events: none; }
+
+  /* Flower shower button – bottom LEFT, icon-only, beside the mala */
+  #flowerBtn{
+    position: absolute;
+    left: max(12px, env(safe-area-inset-left));
+    bottom: max(20px, var(--safe-bot));
+    z-index: 28;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border-radius: 50%;
+    border: 2px solid color-mix(in srgb, var(--accent-soft) 55%, transparent);
+    background: rgba(255,255,255,0.92);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 14px color-mix(in srgb, var(--accent) 16%, transparent);
+    font-size: 22px;
+    line-height: 1;
+    color: var(--accent-deep);
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+  #flowerBtn:hover{ transform: scale(1.08); }
+  #flowerBtn:active{ transform: scale(0.94); }
+  /* Flower CTA stays visible even in focus mode */
+  body.cinematic-active #flowerBtn{
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Falling flower particles */
+  .petal{
+    position: fixed;
+    top: -50px;
+    pointer-events: none;
+    z-index: 80;
+    font-size: 22px;
+    will-change: transform, opacity;
+    animation: petalFall linear forwards;
+  }
+  @keyframes petalFall{
+    0%{
+      transform: translate3d(0, 0, 0) rotate(0deg) scale(1);
+      opacity: 1;
+    }
+    25%{
+      transform: translate3d(var(--sway, 20px), 25vh, 0) rotate(180deg) scale(1.05);
+    }
+    60%{
+      transform: translate3d(calc(var(--sway, 20px) * -0.6), 60vh, 0) rotate(420deg) scale(0.95);
+      opacity: 0.95;
+    }
+    100%{
+      transform: translate3d(calc(var(--sway, 20px) * 0.3), 110vh, 0) rotate(720deg) scale(0.65);
+      opacity: 0;
+    }
+  }
+
+  /* Flower type picker (small chips) – near left flower button */
+  #flowerPicker{
+    position: absolute;
+    left: max(12px, env(safe-area-inset-left));
+    bottom: max(64px, calc(var(--safe-bot) + 48px));
+    z-index: 29;
+    display: none;
+    flex-wrap: wrap;
+    gap: 5px;
+    padding: 7px 8px;
+    max-width: 210px;
+    background: rgba(255,255,255,0.94);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    border: 2px solid color-mix(in srgb, var(--accent-soft) 45%, transparent);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+  }
+  #flowerPicker.show{ display: flex; }
+  body.cinematic-active #flowerPicker{ display: none !important; }
+  .flower-chip{
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    border: 2px solid transparent;
+    background: rgba(255,255,255,0.7);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: transform 0.15s, border-color 0.15s;
+  }
+  .flower-chip:hover{ transform: scale(1.12); }
+  .flower-chip.active{
+    border-color: var(--accent);
+    background: color-mix(in srgb, var(--accent-soft) 30%, white);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 25%, transparent);
+  }
+
+  /* No completion text flash – only soft dissolve */
+  #completeFlash{ display:none !important; }
+
+  .spark{
+    position:absolute; left:50%; top:50%; width:5px; height:5px; border-radius:50%;
+    background:var(--gold); box-shadow:0 0 6px 2px color-mix(in srgb, var(--gold) 72%, transparent);
+    pointer-events:none; z-index:35;
+  }
+  #stage.divine-flash::after{
+    content:''; position:absolute; inset:0;
+    background:radial-gradient(circle at 50% 58%, color-mix(in srgb, var(--gold-light) 85%, transparent), color-mix(in srgb, var(--accent) 28%, transparent) 42%, transparent 70%);
+    animation:divinePulse 1.15s ease-out forwards; pointer-events:none; z-index:45;
+  }
+  @keyframes divinePulse{
+    0%{opacity:0;transform:scale(0.4);} 35%{opacity:1;transform:scale(1.04);} 100%{opacity:0;transform:scale(1.45);}
+  }
+
+  #musicStatus{
+    position:absolute; top:calc(var(--safe-top) + 92px); right:11px; z-index:22;
+    font-size:10.5px; font-weight:600; color:var(--ink);
+    background:rgba(255,255,255,0.9);
+    border:2px solid color-mix(in srgb, var(--accent-soft) 38%, transparent);
+    border-radius:9px; padding:4px 8px; max-width:180px; text-align:right; display:none;
+  }
+  #musicStatus.show{ display:block; }
+
+  @media (max-width:400px){
+    .speed-label{display:none;} #speedSlider{width:50px;}
+    .pill-btn{padding:6px 9px; font-size:11px;}
+    #styleBar{gap:4px; padding:4px 5px;}
+    .theme-dot{width:16px; height:16px;}
+    .mini-font{padding:2px 5px; font-size:9.5px;}
+  }
+  @media (prefers-reduced-motion:reduce){
+    #count,.bead,#malaWrap,.float-spark{transition:none;animation:none;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SETUP -->
+  <div id="view-setup" class="view active">
+    <div class="setup-inner">
+      <div class="setup-hero">
+        <div class="emoji">🪷✨</div>
+        <h1>Baby Japa Mala</h1>
+        <p>अपना प्यारा मंत्र जप शुरू करें</p>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Mantra</div>
+        <input type="text" id="setupMantra" placeholder="अपना मंत्र लिखो (जैसे ॐ गं गणपतये नमः)" maxlength="60">
+      </div>
+
+      <div class="card">
+        <div class="card-title">Backdrop (Photo / Video)</div>
+        <div class="backdrop-row">
+          <button type="button" class="backdrop-btn" id="setupBackdropBtn">🖼️ Add Image or Video</button>
+        </div>
+        <input type="file" id="setupFileInput" class="visually-hidden" accept="image/*,video/*" multiple>
+        <div id="setupBgStatus">No backdrop yet — optional</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">UI Font</div>
+        <div class="font-grid" id="uiFontGrid">
+          <button class="font-btn active" data-font="Nunito">Nunito</button>
+          <button class="font-btn" data-font="Baloo 2">Baloo</button>
+          <button class="font-btn" data-font="Fredoka">Fredoka</button>
+          <button class="font-btn" data-font="Quicksand">Quicksand</button>
+          <button class="font-btn" data-font="Comfortaa">Comfortaa</button>
+          <button class="font-btn" data-font="Plus Jakarta">Jakarta</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Number Count Font (for १ २ ३ … ८ ९)</div>
+        <div class="font-grid" id="countFontGrid">
+          <button class="font-btn active" data-font="Noto">Noto (clearest)</button>
+          <button class="font-btn" data-font="Baloo 2">Baloo</button>
+          <button class="font-btn" data-font="Fredoka">Fredoka</button>
+          <button class="font-btn" data-font="Nunito">Nunito</button>
+          <button class="font-btn" data-font="Quicksand">Quicksand</button>
+          <button class="font-btn" data-font="Plus Jakarta">Jakarta</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Pastel Colour</div>
+        <div class="theme-row" id="setupThemeRow">
+          <button class="theme-dot active" data-hue="12"  style="background:linear-gradient(135deg,#ff9a7a,#ff6a50)"></button>
+          <button class="theme-dot" data-hue="210" style="background:linear-gradient(135deg,#7ec8ff,#4a9fff)"></button>
+          <button class="theme-dot" data-hue="150" style="background:linear-gradient(135deg,#7ed9b8,#2ecf8a)"></button>
+          <button class="theme-dot" data-hue="270" style="background:linear-gradient(135deg,#c9a8ff,#a06cff)"></button>
+          <button class="theme-dot" data-hue="42"  style="background:linear-gradient(135deg,#ffd66b,#e8a020)"></button>
+          <button class="theme-dot" data-hue="340" style="background:linear-gradient(135deg,#ffb0c8,#f06090)"></button>
+          <button class="theme-dot" data-hue="175" style="background:linear-gradient(135deg,#70e0d4,#20b8a8)"></button>
+        </div>
+        <div class="slider-block">
+          <div class="slider-label"><span>Custom Pastel Hue</span><span id="hueValue">12°</span></div>
+          <input type="range" id="hueSlider" min="0" max="360" value="12">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Counter Style</div>
+        <div class="font-grid" id="modeGrid" style="grid-template-columns:1fr 1fr;">
+          <button class="font-btn active" data-mode="mala">📿 Mala Beads</button>
+          <button class="font-btn" data-mode="scoreboard">🎮 Scoreboard</button>
+        </div>
+        <div style="font-size:11px;color:var(--mist);margin-top:8px;text-align:center;line-height:1.35;">
+          Mala = beads · Scoreboard = bottom-right transparent counter
+        </div>
+      </div>
+
+      <div class="card" id="sbStyleCard" style="display:none;">
+        <div class="card-title">Scoreboard Layout</div>
+        <div class="font-grid" id="sbStyleGrid" style="grid-template-columns:1fr 1fr;">
+          <button class="font-btn active" data-sb="bar">▬ Full Bar</button>
+          <button class="font-btn" data-sb="stadium">▣ Stadium</button>
+          <button class="font-btn" data-sb="clock">🕒 Clock</button>
+          <button class="font-btn" data-sb="ring">◎ Ring</button>
+          <button class="font-btn" data-sb="minimal">· Minimal</button>
+        </div>
+        <div style="font-size:11px;color:var(--mist);margin-top:8px;text-align:center;line-height:1.35;">
+          Structurally different counters · full-width · transparent
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Total Counts (जप संख्या)</div>
+        <div class="theme-row" id="totalGrid" style="gap:8px;flex-wrap:wrap;justify-content:center;">
+          <button class="font-btn" data-total="11" style="min-width:52px;padding:8px 10px;">11</button>
+          <button class="font-btn" data-total="21" style="min-width:52px;padding:8px 10px;">21</button>
+          <button class="font-btn" data-total="27" style="min-width:52px;padding:8px 10px;">27</button>
+          <button class="font-btn" data-total="54" style="min-width:52px;padding:8px 10px;">54</button>
+          <button class="font-btn active" data-total="108" style="min-width:52px;padding:8px 10px;">108</button>
+          <button class="font-btn" data-total="1008" style="min-width:52px;padding:8px 10px;">1008</button>
+        </div>
+      </div>
+
+      <div class="card" id="malaOptionsCard">
+        <div class="card-title">Mala Layout</div>
+        <div class="font-grid" id="layoutGrid" style="grid-template-columns:1fr 1fr;">
+          <button class="font-btn active" data-layout="circle">⭕ Circle</button>
+          <button class="font-btn" data-layout="arc">⌒ Arc</button>
+          <button class="font-btn" data-layout="strand">📿 Strand</button>
+          <button class="font-btn" data-layout="ring">◎ Ring</button>
+        </div>
+      </div>
+
+      <div class="card" id="beadStyleCard">
+        <div class="card-title">Bead Style</div>
+        <div class="font-grid" id="beadStyleGrid" style="grid-template-columns:1fr 1fr 1fr;">
+          <button class="font-btn active" data-bead="pastel">Pastel</button>
+          <button class="font-btn" data-bead="wood">Wood</button>
+          <button class="font-btn" data-bead="pearl">Pearl</button>
+          <button class="font-btn" data-bead="gold">Gold</button>
+          <button class="font-btn" data-bead="crystal">Crystal</button>
+          <button class="font-btn" data-bead="candy">Candy</button>
+        </div>
+      </div>
+
+      <div class="card" id="beadSizeCard">
+        <div class="card-title">Bead Size</div>
+        <div class="slider-block">
+          <div class="slider-label"><span>Size</span><span id="beadSizeLabel">Medium</span></div>
+          <input type="range" id="beadSizeSlider" min="0" max="3" step="1" value="1"
+            style="background:linear-gradient(to right, var(--accent-soft), var(--accent));">
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Flower Shower (पुष्प वर्षा)</div>
+        <div class="theme-row" id="setupFlowerRow" style="gap:7px;">
+          <button class="flower-chip active" data-flower="marigold" title="Marigold">🌼</button>
+          <button class="flower-chip" data-flower="rose" title="Rose">🌹</button>
+          <button class="flower-chip" data-flower="lotus" title="Lotus">🪷</button>
+          <button class="flower-chip" data-flower="hibiscus" title="Hibiscus">🌺</button>
+          <button class="flower-chip" data-flower="durva" title="Durva (Ganesha)">🌿</button>
+          <button class="flower-chip" data-flower="jasmine" title="Jasmine">💮</button>
+          <button class="flower-chip" data-flower="sunflower" title="Sunflower">🌻</button>
+          <button class="flower-chip" data-flower="bouquet" title="Bouquet">💐</button>
+          <button class="flower-chip" data-flower="mixed" title="Mixed">✨</button>
+        </div>
+        <div style="font-size:11px; color:var(--mist); margin-top:8px; text-align:center; line-height:1.4;">
+          🌼 Marigold · 🌹 Rose · 🪷 Lotus · 🌺 Hibiscus<br>
+          🌿 Durva (Ganesha) · 💮 Jasmine · 🌻 Sunflower · 💐 Bouquet
+        </div>
+      </div>
+
+      <button class="start-btn" id="startBtn">Start Japa 🪷</button>
+    </div>
+  </div>
+
+  <!-- JAPA -->
+  <div id="view-japa" class="view">
+    <div id="backdrop">
+      <img id="bgImg" alt="">
+      <video id="bgVideoBackdrop" muted loop playsinline preload="auto" webkit-playsinline></video>
+    </div>
+    <div id="scrim"></div>
+
+    <div class="float-spark" style="left:10%;top:15%;animation-delay:0s">✨</div>
+    <div class="float-spark" style="left:85%;top:19%;animation-delay:1.2s">🌟</div>
+    <div class="float-spark" style="left:6%;top:50%;animation-delay:2.5s">✨</div>
+    <div class="float-spark" style="left:88%;top:45%;animation-delay:1.9s">💫</div>
+
+    <div id="emptyHint">Theme & fonts can be changed anytime ↑</div>
+
+    <div id="topbar">
+      <!-- All customize options left-aligned; tiny arrow stays right -->
+      <div class="top-left">
+        <button type="button" class="pill-btn" id="addBackdropBtn">🖼️</button>
+        <input type="file" id="fileInput" class="visually-hidden" accept="image/*,video/*" multiple>
+        <button type="button" class="pill-btn" id="settingsBtn">⚙️</button>
+        <button type="button" class="pill-btn" id="addMusicBtn">🎵</button>
+        <input type="file" id="musicInput" class="visually-hidden" accept="audio/*">
+        <button type="button" class="pill-btn" id="musicMuteBtn" style="display:none">▶</button>
+        <button class="pill-btn" id="soundToggle">🔔</button>
+        <button class="pill-btn" id="voiceToggle">🗣️</button>
+      </div>
+    </div>
+
+    <!-- Tiny top-right arrow – separate from controls so no overlap on mobile -->
+    <button type="button" id="focusToggle" title="Hide / show controls">▲</button>
+
+    <div id="styleBar">
+      <button class="theme-dot" data-hue="12"  style="background:linear-gradient(135deg,#ff9a7a,#ff6a50)"></button>
+      <button class="theme-dot" data-hue="210" style="background:linear-gradient(135deg,#7ec8ff,#4a9fff)"></button>
+      <button class="theme-dot" data-hue="150" style="background:linear-gradient(135deg,#7ed9b8,#2ecf8a)"></button>
+      <button class="theme-dot" data-hue="270" style="background:linear-gradient(135deg,#c9a8ff,#a06cff)"></button>
+      <button class="theme-dot" data-hue="42"  style="background:linear-gradient(135deg,#ffd66b,#e8a020)"></button>
+      <button class="theme-dot" data-hue="340" style="background:linear-gradient(135deg,#ffb0c8,#f06090)"></button>
+      <button class="theme-dot" data-hue="175" style="background:linear-gradient(135deg,#70e0d4,#20b8a8)"></button>
+      <div class="style-divider"></div>
+      <button class="mini-font" data-font="Noto" title="Count font: Noto">No</button>
+      <button class="mini-font" data-font="Baloo 2" title="Count font: Baloo">Ba</button>
+      <button class="mini-font" data-font="Fredoka" title="Count font: Fredoka">Fr</button>
+      <button class="mini-font" data-font="Nunito" title="Count font: Nunito">Nu</button>
+    </div>
+
+    <div id="musicStatus"></div>
+
+    <div id="cinematicHeader">
+      <button type="button" class="cin-icon-btn" id="cinPauseBtn">⏸</button>
+      <button type="button" class="cin-icon-btn" id="cinResetBtn">↺</button>
+      <div class="speed-wrap">
+        <span class="speed-label">Speed</span>
+        <input type="range" id="speedSlider" min="0" max="3" step="0.5" value="1">
+        <span id="speedValue">1.0×</span>
+      </div>
+      <button type="button" class="cin-icon-btn" id="cinMusicBtn" style="display:none">▶</button>
+      <div class="cin-spacer"></div>
+      <button type="button" class="cin-icon-btn" id="cinematicExit">✕</button>
+    </div>
+
+    <div id="malaWrap">
+      <div id="ring"></div>
+      <div id="core" tabindex="0" role="button" aria-label="Count one mantra">
+        <div id="mantraLabel" contenteditable="true" spellcheck="false" data-placeholder="✎ मंत्र"></div>
+        <div id="divider"></div>
+        <div id="count">0</div>
+        <div id="ofLabel">of</div>
+        <div id="totalLabel">108</div>
+        <div id="lotus">🪷</div>
+      </div>
+    </div>
+
+    <!-- Scoreboard mode – full-width bottom, transparent -->
+    <div id="scoreboard" tabindex="0" role="button" aria-label="Count one mantra">
+      <div class="sb-frame">
+        <div class="sb-mantra" id="sbMantra" contenteditable="true" spellcheck="false" data-placeholder="✎ मंत्र"></div>
+
+        <!-- BAR / MINIMAL row -->
+        <div class="sb-row">
+          <div class="sb-digits" id="sbCount">0</div>
+          <div class="sb-slash">/</div>
+          <div class="sb-total-big" id="sbTotalBig">108</div>
+        </div>
+        <div class="sb-bar-wrap"><div class="sb-bar" id="sbBar"></div></div>
+
+        <!-- STADIUM: two score boxes -->
+        <div class="sb-stadium-box">
+          <div class="sb-box">
+            <div class="sb-box-label">Now</div>
+            <div class="sb-box-num" id="sbBoxCount">0</div>
+          </div>
+          <div class="sb-box">
+            <div class="sb-box-label">Total</div>
+            <div class="sb-box-num" id="sbBoxTotal">108</div>
+          </div>
+        </div>
+
+        <!-- CLOCK: digital clock face -->
+        <div class="sb-clock-face">
+          <span class="sb-clock-digit" id="sbClockCount">0</span>
+          <span class="sb-clock-sep">:</span>
+          <span class="sb-clock-digit" id="sbClockTotal">108</span>
+        </div>
+
+        <!-- RING: circular progress -->
+        <div class="sb-ring-wrap">
+          <svg class="sb-ring-svg" viewBox="0 0 120 120">
+            <circle class="sb-ring-bg" cx="60" cy="60" r="54"></circle>
+            <circle class="sb-ring-fg" id="sbRingFg" cx="60" cy="60" r="54"></circle>
+          </svg>
+          <div class="sb-ring-num" id="sbRingCount">0</div>
+        </div>
+        <div class="sb-ring-total" id="sbRingTotalLabel" style="display:none;">of 108</div>
+      </div>
+    </div>
+
+    <!-- kept in DOM but forced hidden – no completion text -->
+    <div id="completeFlash"></div>
+
+    <div id="controls">
+      <button class="ctrl" id="resetBtn">↺ Reset</button>
+      <button class="ctrl primary" id="cinematicBtn">▶ Cinematic</button>
+    </div>
+
+    <!-- Flower shower CTA – bottom left, icon-only -->
+    <button type="button" id="flowerBtn" title="Shower flowers">🌼</button>
+    <div id="flowerPicker" role="group" aria-label="Choose flower">
+      <button class="flower-chip active" data-flower="marigold" title="Marigold">🌼</button>
+      <button class="flower-chip" data-flower="rose" title="Rose">🌹</button>
+      <button class="flower-chip" data-flower="lotus" title="Lotus">🪷</button>
+      <button class="flower-chip" data-flower="hibiscus" title="Hibiscus">🌺</button>
+      <button class="flower-chip" data-flower="durva" title="Durva (Ganesha)">🌿</button>
+      <button class="flower-chip" data-flower="jasmine" title="Jasmine">💮</button>
+      <button class="flower-chip" data-flower="sunflower" title="Sunflower">🌻</button>
+      <button class="flower-chip" data-flower="bouquet" title="Bouquet">💐</button>
+      <button class="flower-chip" data-flower="mixed" title="Mixed">✨</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  let TOTAL = 108;
+  let count = 0, autoPlaying = false, autoInterval = null, audioCtx = null;
+  let soundOn = true, voiceOn = true, paused = false, speedMultiplier = 1;
+  let bgMusic = null, currentHue = 12, currentUiFont = 'Nunito', currentCountFont = 'Noto';
+  let currentMode = 'mala'; // 'mala' | 'scoreboard'
+
+  const viewSetup = document.getElementById('view-setup');
+  const viewJapa  = document.getElementById('view-japa');
+  const ring = document.getElementById('ring');
+  const core = document.getElementById('core');
+  const countEl = document.getElementById('count');
+  const resetBtn = document.getElementById('resetBtn');
+  const cinematicBtn = document.getElementById('cinematicBtn');
+  const fileInput = document.getElementById('fileInput');
+  const setupFileInput = document.getElementById('setupFileInput');
+  const backdrop = document.getElementById('backdrop');
+  const bgImg = document.getElementById('bgImg');
+  const bgVideoBackdrop = document.getElementById('bgVideoBackdrop');
+  const emptyHint = document.getElementById('emptyHint');
+  const soundToggle = document.getElementById('soundToggle');
+  const voiceToggle = document.getElementById('voiceToggle');
+  const malaWrap = document.getElementById('malaWrap');
+  const addBackdropBtn = document.getElementById('addBackdropBtn');
+  const setupBackdropBtn = document.getElementById('setupBackdropBtn');
+  const setupBgStatus = document.getElementById('setupBgStatus');
+  const cinematicExit = document.getElementById('cinematicExit');
+  const cinematicHeader = document.getElementById('cinematicHeader');
+  const cinPauseBtn = document.getElementById('cinPauseBtn');
+  const cinResetBtn = document.getElementById('cinResetBtn');
+  const speedSlider = document.getElementById('speedSlider');
+  const speedValue = document.getElementById('speedValue');
+  const addMusicBtn = document.getElementById('addMusicBtn');
+  const musicInput = document.getElementById('musicInput');
+  const musicMuteBtn = document.getElementById('musicMuteBtn');
+  const focusToggle = document.getElementById('focusToggle');
+  const flowerBtn = document.getElementById('flowerBtn');
+  const flowerPicker = document.getElementById('flowerPicker');
+  const cinMusicBtn = document.getElementById('cinMusicBtn');
+  const musicStatus = document.getElementById('musicStatus');
+  const stage = document.getElementById('view-japa');
+  const mantraLabel = document.getElementById('mantraLabel');
+  const setupMantra = document.getElementById('setupMantra');
+  const hueSlider = document.getElementById('hueSlider');
+  const hueValue = document.getElementById('hueValue');
+  const startBtn = document.getElementById('startBtn');
+  const settingsBtn = document.getElementById('settingsBtn');
+  const scoreboard = document.getElementById('scoreboard');
+  const sbCount = document.getElementById('sbCount');
+  const sbTotalBig = document.getElementById('sbTotalBig');
+  const sbBar = document.getElementById('sbBar');
+  const sbMantra = document.getElementById('sbMantra');
+  const sbBoxCount = document.getElementById('sbBoxCount');
+  const sbBoxTotal = document.getElementById('sbBoxTotal');
+  const sbClockCount = document.getElementById('sbClockCount');
+  const sbClockTotal = document.getElementById('sbClockTotal');
+  const sbRingCount = document.getElementById('sbRingCount');
+  const sbRingFg = document.getElementById('sbRingFg');
+  const sbRingTotalLabel = document.getElementById('sbRingTotalLabel');
+
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const devDigits = ['०','१','२','३','४','५','६','७','८','९'];
+  function toDevanagari(n){
+    return String(n).split('').map(ch => /[0-9]/.test(ch) ? devDigits[+ch] : ch).join('');
+  }
+  function updateTotalLabels(){
+    const t = toDevanagari(TOTAL);
+    const tl = document.getElementById('totalLabel');
+    if(tl) tl.textContent = t;
+    if(sbTotalBig) sbTotalBig.textContent = t;
+    if(sbBoxTotal) sbBoxTotal.textContent = t;
+    if(sbClockTotal) sbClockTotal.textContent = t;
+    if(sbRingTotalLabel) sbRingTotalLabel.textContent = 'of ' + t;
+  }
+  updateTotalLabels();
+
+  // ---------- Theme (pastel) ----------
+  function hsl(h,s,l){ return `hsl(${h},${s}%,${l}%)`; }
+  function applyHue(h){
+    currentHue = h;
+    const root = document.documentElement.style;
+    root.setProperty('--accent',     hsl(h,72,62));
+    root.setProperty('--accent-soft',hsl(h,70,78));
+    root.setProperty('--accent-deep',hsl(h,70,48));
+    root.setProperty('--gold',       hsl(h,75,58));
+    root.setProperty('--gold-light', hsl(h,70,82));
+    root.setProperty('--bg1',        hsl(h,55,96));
+    root.setProperty('--bg2',        hsl((h+20)%360,50,94));
+    root.setProperty('--bg3',        hsl((h+40)%360,45,93));
+    root.setProperty('--bead-base',  hsl(h,45,82));
+    root.setProperty('--bead-base-highlight', hsl(h,40,94));
+    root.setProperty('--bead-lit',   hsl(h,80,62));
+    root.setProperty('--bead-lit-core', hsl(h,70,92));
+    root.setProperty('--core-mid',   `hsla(${h},40%,96%,0.92)`);
+    root.setProperty('--core-end',   `hsla(${h},45%,90%,0.82)`);
+    root.setProperty('--ink',        hsl(h,25,22));
+    root.setProperty('--mist',       `hsla(${h},20%,30%,0.55)`);
+    document.querySelectorAll('.theme-dot').forEach(d => d.classList.toggle('active', Math.abs(parseInt(d.dataset.hue)-h)<8));
+    hueSlider.value = h; hueValue.textContent = h+'°';
+    try{ localStorage.setItem('babyMalaHue', h); }catch(e){}
+  }
+
+  // ---------- Fonts ----------
+  const fontMap = {
+    'Baloo 2': "'Baloo 2', 'Noto Sans Devanagari', sans-serif",
+    'Fredoka': "'Fredoka', 'Noto Sans Devanagari', sans-serif",
+    'Nunito': "'Nunito', 'Noto Sans Devanagari', sans-serif",
+    'Quicksand': "'Quicksand', 'Noto Sans Devanagari', sans-serif",
+    'Comfortaa': "'Comfortaa', 'Noto Sans Devanagari', sans-serif",
+    'Plus Jakarta': "'Plus Jakarta Sans', 'Noto Sans Devanagari', sans-serif",
+    'Noto': "'Noto Sans Devanagari', 'Inter', sans-serif"
+  };
+  function applyUiFont(name){
+    currentUiFont = name;
+    document.documentElement.style.setProperty('--ui-font', fontMap[name] || fontMap['Nunito']);
+    document.querySelectorAll('#uiFontGrid .font-btn').forEach(b => b.classList.toggle('active', b.dataset.font === name));
+    try{ localStorage.setItem('babyMalaUiFont', name); }catch(e){}
+  }
+  function applyCountFont(name){
+    currentCountFont = name;
+    document.documentElement.style.setProperty('--count-font', fontMap[name] || fontMap['Noto']);
+    document.querySelectorAll('#countFontGrid .font-btn').forEach(b => b.classList.toggle('active', b.dataset.font === name));
+    document.querySelectorAll('#styleBar .mini-font').forEach(b => b.classList.toggle('active', b.dataset.font === name));
+    try{ localStorage.setItem('babyMalaCountFont', name); }catch(e){}
+  }
+
+  try{
+    const h = localStorage.getItem('babyMalaHue'); if(h) applyHue(+h); else applyHue(12);
+    const uf = localStorage.getItem('babyMalaUiFont'); if(uf) applyUiFont(uf); else applyUiFont('Nunito');
+    const cf = localStorage.getItem('babyMalaCountFont'); if(cf) applyCountFont(cf); else applyCountFont('Noto');
+  }catch(e){ applyHue(12); applyUiFont('Nunito'); applyCountFont('Noto'); }
+
+  document.getElementById('uiFontGrid').addEventListener('click', e=>{
+    const btn = e.target.closest('.font-btn'); if(btn) applyUiFont(btn.dataset.font);
+  });
+  document.getElementById('countFontGrid').addEventListener('click', e=>{
+    const btn = e.target.closest('.font-btn'); if(btn) applyCountFont(btn.dataset.font);
+  });
+  document.getElementById('setupThemeRow').addEventListener('click', e=>{
+    const dot = e.target.closest('.theme-dot'); if(dot) applyHue(+dot.dataset.hue);
+  });
+  hueSlider.addEventListener('input', ()=> applyHue(+hueSlider.value));
+  document.getElementById('styleBar').addEventListener('click', e=>{
+    const dot = e.target.closest('.theme-dot'); if(dot) applyHue(+dot.dataset.hue);
+    const mf = e.target.closest('.mini-font'); if(mf) applyCountFont(mf.dataset.font);
+  });
+
+  // ---------- View switch ----------
+  function showView(name){
+    viewSetup.classList.toggle('active', name==='setup');
+    viewJapa.classList.toggle('active', name==='japa');
+    // Always leave focus mode when switching views
+    document.body.classList.remove('focus-mode');
+    if(focusToggle){ focusToggle.textContent = '▲'; focusToggle.title = 'Hide controls'; }
+    if(name==='japa'){
+      const t = (setupMantra.value||'').trim();
+      if(t){
+        if(mantraLabel) mantraLabel.textContent = t;
+        if(sbMantra) sbMantra.textContent = t;
+      }
+      setTimeout(layoutBeads, 30);
+    } else {
+      // sync current mantra back to setup field
+      const from = (currentMode === 'scoreboard' && sbMantra)
+        ? (sbMantra.textContent||'').trim()
+        : (mantraLabel.textContent||'').trim();
+      if(from) setupMantra.value = from;
+    }
+  }
+  startBtn.addEventListener('click', ()=> showView('japa'));
+  settingsBtn.addEventListener('click', ()=>{
+    const from = (currentMode === 'scoreboard' && sbMantra)
+      ? (sbMantra.textContent||'').trim()
+      : (mantraLabel.textContent||'').trim();
+    setupMantra.value = from;
+    showView('setup');
+  });
+
+  // ---------- Beads ----------
+  let beads = [];
+  function rebuildBeads(){
+    ring.innerHTML = '';
+    beads = [];
+    for(let i=0;i<TOTAL;i++){
+      const b = document.createElement('div');
+      b.className = 'bead'+(i===0?' meru':'');
+      ring.appendChild(b);
+      beads.push(b);
+    }
+    setTimeout(layoutBeads, 20);
+  }
+  rebuildBeads();
+
+  let currentLayout = 'circle';
+  let currentBeadStyle = 'pastel';
+  let currentBeadSize = 1; // 0=S, 1=M, 2=L, 3=XL
+
+  const BEAD_SIZES = [
+    { bead: 9,  meru: 16, label: 'Small' },
+    { bead: 13, meru: 22, label: 'Medium' },
+    { bead: 17, meru: 28, label: 'Large' },
+    { bead: 21, meru: 34, label: 'XL' }
+  ];
+
+  let currentSbStyle = 'bar';
+
+  function applySbStyle(style){
+    const styles = ['bar','stadium','clock','ring','minimal'];
+    if(!styles.includes(style)) style = 'bar';
+    currentSbStyle = style;
+    // clear all structural style classes
+    styles.forEach(s => document.body.classList.remove('sb-' + s));
+    if(style !== 'bar') document.body.classList.add('sb-' + style);
+    // ring total label visibility
+    if(sbRingTotalLabel) sbRingTotalLabel.style.display = style === 'ring' ? '' : 'none';
+    document.querySelectorAll('#sbStyleGrid .font-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.sb === style);
+    });
+    try{ localStorage.setItem('babyMalaSbStyle', style); }catch(e){}
+    render();
+  }
+
+  function applyMode(mode){
+    currentMode = mode === 'scoreboard' ? 'scoreboard' : 'mala';
+    document.body.classList.toggle('mode-scoreboard', currentMode === 'scoreboard');
+    document.querySelectorAll('#modeGrid .font-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.mode === currentMode);
+    });
+    // Show/hide mode-specific setup cards
+    ['malaOptionsCard','beadStyleCard','beadSizeCard'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.style.display = currentMode === 'mala' ? '' : 'none';
+    });
+    const sbCard = document.getElementById('sbStyleCard');
+    if(sbCard) sbCard.style.display = currentMode === 'scoreboard' ? '' : 'none';
+    try{ localStorage.setItem('babyMalaMode', currentMode); }catch(e){}
+    if(currentMode === 'scoreboard' && sbMantra && mantraLabel){
+      sbMantra.textContent = mantraLabel.textContent || '';
+    }
+    setTimeout(layoutBeads, 30);
+  }
+
+  function applyTotal(n){
+    n = parseInt(n, 10);
+    if(!n || n < 1) n = 108;
+    if(n > 1008) n = 1008;
+    TOTAL = n;
+    count = Math.min(count, TOTAL);
+    updateTotalLabels();
+    rebuildBeads();
+    render();
+    document.querySelectorAll('#totalGrid [data-total]').forEach(b => {
+      b.classList.toggle('active', +b.dataset.total === TOTAL);
+    });
+    try{ localStorage.setItem('babyMalaTotal', TOTAL); }catch(e){}
+  }
+
+  function applyBeadSize(idx){
+    currentBeadSize = Math.max(0, Math.min(3, idx|0));
+    const s = BEAD_SIZES[currentBeadSize];
+    document.documentElement.style.setProperty('--bead-size', s.bead + 'px');
+    document.documentElement.style.setProperty('--meru-size', s.meru + 'px');
+    const label = document.getElementById('beadSizeLabel');
+    if(label) label.textContent = s.label;
+    const slider = document.getElementById('beadSizeSlider');
+    if(slider) slider.value = currentBeadSize;
+    try{ localStorage.setItem('babyMalaBeadSize', currentBeadSize); }catch(e){}
+    setTimeout(layoutBeads, 30);
+  }
+
+  function applyBeadStyle(style){
+    currentBeadStyle = style;
+    ['pastel','wood','pearl','gold','crystal','candy'].forEach(s => {
+      document.body.classList.toggle('bead-' + s, s === style && s !== 'pastel');
+    });
+    // pastel = no extra class (default multi-color)
+    if(style === 'pastel'){
+      document.body.classList.remove('bead-wood','bead-pearl','bead-gold','bead-crystal','bead-candy');
+    }
+    document.querySelectorAll('#beadStyleGrid .font-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.bead === style);
+    });
+    try{ localStorage.setItem('babyMalaBeadStyle', style); }catch(e){}
+  }
+
+  function applyLayout(layout){
+    currentLayout = layout;
+    document.body.classList.remove('layout-circle','layout-arc','layout-strand','layout-ring');
+    if(layout !== 'circle') document.body.classList.add('layout-' + layout);
+    document.querySelectorAll('#layoutGrid .font-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.layout === layout);
+    });
+    try{ localStorage.setItem('babyMalaLayout', layout); }catch(e){}
+    setTimeout(layoutBeads, 40);
+  }
+
+  function layoutBeads(){
+    const rect = malaWrap.getBoundingClientRect();
+    const w = rect.width, h = rect.height;
+    if(w < 10 || h < 10) return;
+
+    const margin = Math.max(10, (parseInt(getComputedStyle(document.documentElement).getPropertyValue('--bead-size')) || 13) * 0.9);
+
+    if(currentLayout === 'arc'){
+      // Bottom semicircle arc
+      const cx = w / 2;
+      const cy = h * 0.15;
+      const radius = Math.min(w / 2 - margin, h * 0.85);
+      beads.forEach((b, i) => {
+        // map 0..107 to angle from ~200° to ~340° (bottom arc)
+        const t = i / (TOTAL - 1);
+        const angle = (200 + t * 140) * Math.PI / 180;
+        b.style.left = (cx + radius * Math.cos(angle)) + 'px';
+        b.style.top  = (cy + radius * Math.sin(angle)) + 'px';
+        b.style.transform = 'translate(-50%,-50%)';
+      });
+    } else if(currentLayout === 'strand'){
+      // Vertical strand on the right side
+      const x = w * 0.82;
+      const topY = margin + 8;
+      const botY = h - margin - 8;
+      const span = botY - topY;
+      beads.forEach((b, i) => {
+        const t = i / (TOTAL - 1);
+        b.style.left = x + 'px';
+        b.style.top  = (topY + t * span) + 'px';
+        b.style.transform = 'translate(-50%,-50%)';
+      });
+    } else {
+      // Circle or Ring – full circle
+      const size = Math.min(w, h);
+      const radius = size / 2 - margin - 4;
+      const cx = w / 2, cy = h / 2;
+      beads.forEach((b, i) => {
+        const a = (-90 + i * (360 / TOTAL)) * Math.PI / 180;
+        b.style.left = (cx + radius * Math.cos(a)) + 'px';
+        b.style.top  = (cy + radius * Math.sin(a)) + 'px';
+        b.style.transform = 'translate(-50%,-50%)';
+      });
+    }
+  }
+  window.addEventListener('resize', layoutBeads);
+
+  // Wire setup controls
+  const modeGrid = document.getElementById('modeGrid');
+  if(modeGrid){
+    modeGrid.addEventListener('click', e => {
+      const btn = e.target.closest('[data-mode]');
+      if(btn) applyMode(btn.dataset.mode);
+    });
+  }
+  const sbStyleGrid = document.getElementById('sbStyleGrid');
+  if(sbStyleGrid){
+    sbStyleGrid.addEventListener('click', e => {
+      const btn = e.target.closest('[data-sb]');
+      if(btn) applySbStyle(btn.dataset.sb);
+    });
+  }
+  const totalGrid = document.getElementById('totalGrid');
+  if(totalGrid){
+    totalGrid.addEventListener('click', e => {
+      const btn = e.target.closest('[data-total]');
+      if(btn) applyTotal(+btn.dataset.total);
+    });
+  }
+  const layoutGrid = document.getElementById('layoutGrid');
+  if(layoutGrid){
+    layoutGrid.addEventListener('click', e => {
+      const btn = e.target.closest('[data-layout]');
+      if(btn) applyLayout(btn.dataset.layout);
+    });
+  }
+  const beadStyleGrid = document.getElementById('beadStyleGrid');
+  if(beadStyleGrid){
+    beadStyleGrid.addEventListener('click', e => {
+      const btn = e.target.closest('[data-bead]');
+      if(btn) applyBeadStyle(btn.dataset.bead);
+    });
+  }
+  const beadSizeSlider = document.getElementById('beadSizeSlider');
+  if(beadSizeSlider){
+    beadSizeSlider.addEventListener('input', () => applyBeadSize(+beadSizeSlider.value));
+  }
+
+  // Restore saved prefs
+  try{
+    const tm = localStorage.getItem('babyMalaTotal');
+    if(tm) applyTotal(+tm);
+    const md = localStorage.getItem('babyMalaMode');
+    if(md) applyMode(md); else applyMode('mala');
+    const sbs = localStorage.getItem('babyMalaSbStyle');
+    // migrate old style names
+    const styleMap = {hud:'bar', neon:'bar', led:'stadium', flip:'clock'};
+    if(sbs) applySbStyle(styleMap[sbs] || sbs);
+    const ls = localStorage.getItem('babyMalaLayout');
+    if(ls) applyLayout(ls);
+    const bs = localStorage.getItem('babyMalaBeadStyle');
+    if(bs) applyBeadStyle(bs);
+    const bsz = localStorage.getItem('babyMalaBeadSize');
+    if(bsz !== null) applyBeadSize(+bsz);
+    else applyBeadSize(1);
+  }catch(e){ applyBeadSize(1); applyMode('mala'); }
+
+  // ---------- Sound / Voice ----------
+  function tick(final){
+    if(!soundOn) return;
+    try{
+      if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+      const t0 = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+      osc.type='sine'; osc.frequency.value = final?720:960;
+      gain.gain.setValueAtTime(0.0001,t0);
+      gain.gain.exponentialRampToValueAtTime(final?0.11:0.055, t0+0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t0+(final?0.7:0.16));
+      osc.connect(gain).connect(audioCtx.destination);
+      osc.start(t0); osc.stop(t0+(final?0.8:0.2));
+    }catch(e){}
+  }
+  function speakMantra(isFinal){
+    if(!voiceOn || !window.speechSynthesis) return;
+    try{
+      window.speechSynthesis.cancel();
+      const text = ((currentMode==='scoreboard' && sbMantra ? sbMantra.textContent : mantraLabel.textContent)||'').trim();
+      let utter = isFinal
+        ? (text ? text+'। बहुत अच्छा!' : (toDevanagari(TOTAL)+' पूरा। बहुत अच्छा!'))
+        : (text && text.length < 42 ? text : '');
+      if(!utter) return;
+      const u = new SpeechSynthesisUtterance(utter);
+      u.lang='hi-IN'; u.rate=0.9; u.pitch=1.28; u.volume=0.68;
+      const voices = window.speechSynthesis.getVoices();
+      const pref = voices.find(v=>v.lang.startsWith('hi')&&(v.name.toLowerCase().includes('female')||v.name.toLowerCase().includes('veena'))) || voices.find(v=>v.lang.startsWith('hi'));
+      if(pref) u.voice=pref;
+      window.speechSynthesis.speak(u);
+    }catch(e){}
+  }
+  if(window.speechSynthesis){ window.speechSynthesis.getVoices(); window.speechSynthesis.onvoiceschanged=()=>window.speechSynthesis.getVoices(); }
+  soundToggle.addEventListener('click', ()=>{ soundOn=!soundOn; soundToggle.textContent=soundOn?'🔔':'🔕'; });
+  voiceToggle.addEventListener('click', ()=>{ voiceOn=!voiceOn; voiceToggle.textContent=voiceOn?'🗣️':'🔇'; if(!voiceOn&&window.speechSynthesis) window.speechSynthesis.cancel(); });
+
+  // ---------- Backdrop (shared between setup + japa) ----------
+  const IMAGE_EXT = {jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',gif:'image/gif',webp:'image/webp',bmp:'image/bmp',svg:'image/svg+xml'};
+  const VIDEO_EXT = {mp4:'video/mp4',m4v:'video/mp4',webm:'video/webm',mov:'video/quicktime',ogv:'video/ogg',avi:'video/x-msvideo'};
+  let bgPlaylist=[], bgIndex=0, bgAdvanceTimer=null;
+  function detectBackdropMedia(name){
+    const ext=(name.split('.').pop()||'').toLowerCase();
+    if(IMAGE_EXT[ext]) return {kind:'image',mime:IMAGE_EXT[ext]};
+    if(VIDEO_EXT[ext]) return {kind:'video',mime:VIDEO_EXT[ext]};
+    return null;
+  }
+  function clearBgAdvanceTimer(){ if(bgAdvanceTimer){clearTimeout(bgAdvanceTimer);bgAdvanceTimer=null;} }
+  function advanceBg(){ if(!bgPlaylist.length) return; bgIndex=(bgIndex+1)%bgPlaylist.length; showBgItem(bgIndex); }
+  function showBgItem(index){
+    clearBgAdvanceTimer(); bgVideoBackdrop.onended=null; bgVideoBackdrop.pause();
+    backdrop.classList.remove('has-image','has-video');
+    const item=bgPlaylist[index]; if(!item) return;
+    if(item.kind==='image'){
+      bgImg.src=item.url; backdrop.classList.add('has-image');
+      if(bgPlaylist.length>1) bgAdvanceTimer=setTimeout(advanceBg,7000);
+    } else {
+      bgVideoBackdrop.src=item.url; bgVideoBackdrop.loop=(bgPlaylist.length<=1);
+      bgVideoBackdrop.load(); backdrop.classList.add('has-video');
+      if(bgPlaylist.length>1) bgVideoBackdrop.onended=advanceBg;
+      bgVideoBackdrop.play().catch(()=>{});
+    }
+  }
+  function playBackdropVideo(){ const item=bgPlaylist[bgIndex]; if(item&&item.kind==='video') bgVideoBackdrop.play().catch(()=>{}); }
+  function readFileAsMediaItem(file){
+    return new Promise(resolve=>{
+      const info = detectBackdropMedia(file.name);
+      if(!info){ resolve(null); return; }
+
+      // Use the original File bytes directly — no re-encoding, no quality loss.
+      // URL.createObjectURL keeps the full original resolution & bitrate.
+      try {
+        const url = URL.createObjectURL(file);
+        resolve({ kind: info.kind, url: url, isObjectURL: true });
+      } catch(e) {
+        resolve(null);
+      }
+    });
+  }
+  async function handleBackdropFiles(files){
+    if(!files.length) return;
+    const results=await Promise.all(Array.from(files).map(readFileAsMediaItem));
+    const valid=results.filter(Boolean);
+    if(!valid.length){ alert('Please choose images (JPG/PNG/WebP) and/or videos (MP4/WebM/MOV).'); return; }
+    clearBgAdvanceTimer(); bgVideoBackdrop.onended=null;
+    // Revoke previous object URLs to free memory (both images & videos now use them)
+    bgPlaylist.forEach(i=>{ if(i.isObjectURL) URL.revokeObjectURL(i.url); });
+    bgPlaylist=valid; bgIndex=0; showBgItem(0);
+    emptyHint.style.display='none';
+    const n=valid.length;
+    const hasVid=valid.some(v=>v.kind==='video');
+    setupBgStatus.textContent = n===1
+      ? (hasVid ? '1 video ready' : '1 image ready')
+      : n+' items ready'+(hasVid?' (includes video)':'');
+  }
+  setupBackdropBtn.addEventListener('click', ()=>{ setupFileInput.value=''; setupFileInput.click(); });
+  setupFileInput.addEventListener('change', e=> handleBackdropFiles(e.target.files));
+  addBackdropBtn.addEventListener('click', ()=>{ fileInput.value=''; fileInput.click(); });
+  fileInput.addEventListener('change', e=> handleBackdropFiles(e.target.files));
+
+  // ---------- Music ----------
+  let bgMusicUrl=null;
+  function showMusicStatus(t){ musicStatus.textContent=t; musicStatus.classList.add('show'); }
+  function mimeFromFilename(name){
+    const ext=(name.split('.').pop()||'').toLowerCase();
+    const map={mp3:'audio/mpeg',mpeg:'audio/mpeg',wav:'audio/wav',ogg:'audio/ogg',m4a:'audio/mp4',aac:'audio/aac',flac:'audio/flac',webm:'audio/webm'};
+    return map[ext]||'audio/mpeg';
+  }
+  addMusicBtn.addEventListener('click', ()=>{ musicInput.value=''; musicInput.click(); });
+  musicInput.addEventListener('change', e=>{
+    const file=e.target.files[0]; if(!file) return;
+    showMusicStatus('Loading…');
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      if(bgMusic) bgMusic.pause();
+      if(bgMusicUrl) URL.revokeObjectURL(bgMusicUrl);
+      const blob=new Blob([ev.target.result],{type:mimeFromFilename(file.name)});
+      bgMusicUrl=URL.createObjectURL(blob);
+      bgMusic=new Audio(); bgMusic.loop=true; bgMusic.volume=0.4;
+      bgMusic.addEventListener('error',()=>showMusicStatus('⚠ Try MP3'));
+      bgMusic.addEventListener('canplay',()=>showMusicStatus('Ready'));
+      musicMuteBtn.style.display='flex'; cinMusicBtn.style.display='flex';
+      bgMusic.src=bgMusicUrl; bgMusic.load(); playMusic();
+    };
+    reader.readAsArrayBuffer(file);
+  });
+  function playMusic(){ if(!bgMusic) return; bgMusic.play().then(()=>{showMusicStatus('Playing');updateMusicIcons();}).catch(()=>{showMusicStatus('Tap ▶');updateMusicIcons();}); }
+  function pauseMusic(){ if(!bgMusic) return; bgMusic.pause(); showMusicStatus('Paused'); updateMusicIcons(); }
+  function toggleMusicPlay(){ if(!bgMusic) return; bgMusic.paused?playMusic():pauseMusic(); }
+  function updateMusicIcons(){ if(!bgMusic) return; const p=!bgMusic.paused; musicMuteBtn.textContent=p?'⏸':'▶'; cinMusicBtn.textContent=p?'⏸':'▶'; }
+  musicMuteBtn.addEventListener('click', toggleMusicPlay);
+  cinMusicBtn.addEventListener('click', toggleMusicPlay);
+
+  // ---------- Count ----------
+  function render(highlightIndex){
+    const dev = toDevanagari(count);
+    if(countEl) countEl.textContent = dev;
+
+    // --- Scoreboard surfaces ---
+    const tickEls = [];
+    if(sbCount){ sbCount.textContent = dev; tickEls.push(sbCount); }
+    if(sbBoxCount){ sbBoxCount.textContent = dev; tickEls.push(sbBoxCount); }
+    if(sbClockCount){ sbClockCount.textContent = dev; tickEls.push(sbClockCount); }
+    if(sbRingCount){ sbRingCount.textContent = dev; tickEls.push(sbRingCount); }
+
+    // Animate the active style's number
+    const useTick = (currentSbStyle === 'clock' || currentSbStyle === 'stadium' || currentSbStyle === 'ring');
+    tickEls.forEach(el => {
+      if(useTick){
+        el.classList.remove('tick');
+        void el.offsetWidth;
+        el.classList.add('tick');
+        setTimeout(()=> el.classList.remove('tick'), 320);
+      } else {
+        el.classList.add('bump');
+        setTimeout(()=> el.classList.remove('bump'), 160);
+      }
+    });
+
+    if(sbBar){
+      const pct = TOTAL > 0 ? Math.min(100, (count / TOTAL) * 100) : 0;
+      sbBar.style.width = pct + '%';
+    }
+    // Circular ring progress (circumference ≈ 2π·54 = 339.3)
+    if(sbRingFg){
+      const circ = 339.3;
+      const pct = TOTAL > 0 ? Math.min(1, count / TOTAL) : 0;
+      sbRingFg.style.strokeDashoffset = String(circ * (1 - pct));
+    }
+
+    // --- Mala beads ---
+    beads.forEach((b,i)=>{ b.classList.toggle('lit', i<count); b.classList.remove('active'); });
+    if(highlightIndex!==undefined && highlightIndex>=0 && beads[highlightIndex]){
+      beads[highlightIndex].classList.add('active');
+      setTimeout(()=>beads[highlightIndex]&&beads[highlightIndex].classList.remove('active'), 320);
+    }
+    if(countEl){
+      countEl.classList.add('bump');
+      setTimeout(()=>countEl.classList.remove('bump'), 160);
+    }
+  }
+  function increment(){
+    if(count>=TOTAL) return;
+    count+=1; render(count-1); tick(count===TOTAL);
+    // speak more often for smaller totals
+    const speakEvery = TOTAL <= 27 ? 1 : (TOTAL <= 54 ? 6 : 12);
+    if(count % speakEvery === 0 || count === TOTAL) speakMantra(count===TOTAL);
+    if(count===TOTAL) onComplete();
+  }
+  function reset(){
+    stopCinematic(); count=0; render();
+    core.classList.remove('locked');
+    malaWrap.classList.remove('dissolve');
+    document.body.classList.remove('reveal-image');
+    if(scoreboard){
+      scoreboard.style.opacity = '';
+      scoreboard.style.transition = '';
+      scoreboard.style.pointerEvents = '';
+    }
+    if(window.speechSynthesis) window.speechSynthesis.cancel();
+  }
+
+  core.addEventListener('click', ()=>{ if(!autoPlaying) increment(); });
+  core.addEventListener('keydown', e=>{ if(autoPlaying) return; if(e.key==='Enter'||e.key===' '){ e.preventDefault(); increment(); }});
+
+  // Scoreboard tap-to-count
+  if(scoreboard){
+    scoreboard.addEventListener('click', (e)=>{
+      // don't count when editing mantra
+      if(e.target && e.target.id === 'sbMantra') return;
+      if(!autoPlaying) increment();
+    });
+    scoreboard.addEventListener('keydown', e=>{
+      if(autoPlaying) return;
+      if(e.key==='Enter'||e.key===' '){ e.preventDefault(); increment(); }
+    });
+  }
+  // Keep mantra fields in sync
+  if(sbMantra && mantraLabel){
+    sbMantra.addEventListener('input', ()=>{ mantraLabel.textContent = sbMantra.textContent; });
+    mantraLabel.addEventListener('input', ()=>{ if(sbMantra) sbMantra.textContent = mantraLabel.textContent; });
+  }
+
+  let pressTimer=null;
+  core.addEventListener('pointerdown', ()=>{
+    if(!autoPlaying) return;
+    pressTimer=setTimeout(()=>{ togglePause(); pressTimer=null; if(navigator.vibrate) navigator.vibrate(12); }, 460);
+  });
+  ['pointerup','pointercancel','pointerleave'].forEach(evt=> core.addEventListener(evt, ()=>{ if(pressTimer){clearTimeout(pressTimer);pressTimer=null;} }));
+
+  resetBtn.addEventListener('click', reset);
+
+  // Completion: soft golden pulse → dissolve overlay → show background
+  function onComplete(){
+    core.classList.add('locked');
+    if(scoreboard) scoreboard.style.pointerEvents = 'none';
+    if(!reducedMotion){
+      stage.classList.add('divine-flash');
+      burstSparks(40, 220);
+      setTimeout(()=> stage.classList.remove('divine-flash'), 1100);
+    }
+    setTimeout(()=>{
+      if(currentMode === 'mala'){
+        malaWrap.classList.add('dissolve');
+      } else if(scoreboard){
+        scoreboard.style.opacity = '0';
+        scoreboard.style.transition = 'opacity 1.2s ease';
+      }
+      document.body.classList.add('reveal-image');
+    }, 900);
+  }
+
+  function burstSparks(n, spread){
+    n=n||26; spread=spread||140;
+    const r=malaWrap.getBoundingClientRect();
+    const cx=r.left+r.width/2, cy=r.top+r.height/2;
+    const colors=[getComputedStyle(document.documentElement).getPropertyValue('--gold').trim(),
+                  getComputedStyle(document.documentElement).getPropertyValue('--accent').trim(),
+                  getComputedStyle(document.documentElement).getPropertyValue('--accent-soft').trim(),'#fff'];
+    for(let i=0;i<n;i++){
+      const s=document.createElement('div'); s.className='spark';
+      s.style.background=colors[i%colors.length];
+      s.style.boxShadow='0 0 6px 2px '+colors[i%colors.length];
+      stage.appendChild(s);
+      const ang=Math.random()*Math.PI*2, dist=55+Math.random()*spread;
+      s.style.left=cx+'px'; s.style.top=cy+'px';
+      s.animate([{transform:'translate(-50%,-50%) scale(1)',opacity:1},{transform:`translate(${Math.cos(ang)*dist}px,${Math.sin(ang)*dist}px) scale(0.1)`,opacity:0}],
+        {duration:850+Math.random()*450,easing:'cubic-bezier(.2,.7,.3,1)'});
+      setTimeout(()=>s.remove(),1450);
+    }
+  }
+
+  // ---------- Cinematic ----------
+  function effectiveRunning(){ return autoPlaying && !paused && speedMultiplier>0 && count<TOTAL; }
+  function updateSpeedLabel(){ speedValue.textContent=speedMultiplier.toFixed(1)+'×'; }
+  function updatePauseIcon(){
+    const running=effectiveRunning();
+    cinPauseBtn.textContent=running?'⏸':'▶';
+    cinPauseBtn.disabled=count>=TOTAL;
+  }
+  function restartInterval(){
+    if(autoInterval){clearInterval(autoInterval);autoInterval=null;}
+    if(!effectiveRunning()) return;
+    autoInterval=setInterval(()=>{
+      increment();
+      if(count>=TOTAL){ clearInterval(autoInterval); autoInterval=null; speedSlider.disabled=true; updatePauseIcon(); }
+    }, 1000/speedMultiplier);
+  }
+  function togglePause(){
+    if(!autoPlaying||count>=TOTAL) return;
+    if(effectiveRunning()) paused=true;
+    else{ paused=false; if(speedMultiplier<=0){speedMultiplier=1;speedSlider.value='1';updateSpeedLabel();} }
+    restartInterval(); updatePauseIcon();
+  }
+  speedSlider.addEventListener('input', ()=>{ speedMultiplier=parseFloat(speedSlider.value); updateSpeedLabel(); restartInterval(); updatePauseIcon(); });
+  cinPauseBtn.addEventListener('click', togglePause);
+  cinResetBtn.addEventListener('click', ()=>{
+    if(!autoPlaying) return;
+    count=0; render();
+    core.classList.remove('locked'); malaWrap.classList.remove('dissolve');
+    document.body.classList.remove('reveal-image');
+    if(scoreboard){ scoreboard.style.opacity=''; scoreboard.style.transition=''; scoreboard.style.pointerEvents=''; }
+    paused=false; speedSlider.disabled=false; updatePauseIcon(); restartInterval();
+  });
+
+  function startCinematic(){
+    if(autoPlaying) return;
+    autoPlaying=true; paused=false;
+    speedMultiplier=parseFloat(speedSlider.value)||1;
+    count=0; render();
+    core.classList.remove('locked'); malaWrap.classList.remove('dissolve');
+    document.body.classList.remove('reveal-image', 'focus-mode');
+    if(scoreboard){ scoreboard.style.opacity=''; scoreboard.style.transition=''; scoreboard.style.pointerEvents=''; }
+    if(focusToggle){ focusToggle.textContent = '▲'; focusToggle.title = 'Hide controls'; }
+    document.body.classList.add('cinematic-active');
+    cinematicHeader.classList.add('show');
+    speedSlider.disabled=false; updateSpeedLabel(); updatePauseIcon();
+    resetBtn.disabled=true; playBackdropVideo();
+    setTimeout(layoutBeads,30); restartInterval();
+  }
+  function stopCinematic(){
+    autoPlaying=false; paused=false;
+    if(autoInterval){clearInterval(autoInterval);autoInterval=null;}
+    document.body.classList.remove('cinematic-active','reveal-image');
+    malaWrap.classList.remove('dissolve');
+    if(scoreboard){ scoreboard.style.opacity=''; scoreboard.style.transition=''; scoreboard.style.pointerEvents=''; }
+    cinematicHeader.classList.remove('show');
+    resetBtn.disabled=false;
+    setTimeout(layoutBeads,30);
+  }
+  cinematicBtn.addEventListener('click', startCinematic);
+  cinematicExit.addEventListener('click', stopCinematic);
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape'&&autoPlaying) stopCinematic(); });
+
+  try{ if(window.self!==window.top) showMusicStatus('⚠ Open file directly for best audio'); }catch(e){ showMusicStatus('⚠ Open file directly for best audio'); }
+
+  // ---------- Flower Shower (पुष्प वर्षा) ----------
+  const FLOWER_SETS = {
+    marigold:  ['🌼','🏵️','🟡','🟠','🌼','🏵️'],
+    rose:      ['🌹','🥀','🌹','💗','🌹'],
+    lotus:     ['🪷','🌸','🪷','💮','🪷'],
+    hibiscus:  ['🌺','🌺','🔴','🌺'],
+    durva:     ['🌿','🌱','🍀','🌿','🌾'],
+    jasmine:   ['💮','🌸','🤍','💮','🌼'],
+    sunflower: ['🌻','🌻','🟡','☀️','🌻'],
+    bouquet:   ['💐','🌸','🌹','🌼','🌺'],
+    mixed:     ['🌼','🌹','🪷','🌺','🌿','🌸','🏵️','🌻','💮','✨']
+  };
+  let currentFlower = 'marigold';
+  let lastShowerTime = 0;
+
+  function setFlower(type){
+    if(!FLOWER_SETS[type]) return;
+    currentFlower = type;
+    document.querySelectorAll('.flower-chip').forEach(c => {
+      c.classList.toggle('active', c.dataset.flower === type);
+    });
+    const emojiMap = {
+      marigold:'🌼', rose:'🌹', lotus:'🪷', hibiscus:'🌺',
+      durva:'🌿', jasmine:'💮', sunflower:'🌻', bouquet:'💐', mixed:'✨'
+    };
+    flowerBtn.textContent = emojiMap[type] || '🌸';
+    flowerBtn.title = 'Shower ' + (type || 'flowers');
+    try{ localStorage.setItem('babyMalaFlower', type); }catch(e){}
+  }
+
+  // Restore saved flower
+  try{
+    const savedF = localStorage.getItem('babyMalaFlower');
+    if(savedF && FLOWER_SETS[savedF]) setFlower(savedF);
+  }catch(e){}
+
+  function showerFlowers(){
+    const now = Date.now();
+    if(now - lastShowerTime < 900) return; // gentle rate limit
+    lastShowerTime = now;
+
+    const set = FLOWER_SETS[currentFlower] || FLOWER_SETS.marigold;
+    const count = 28 + Math.floor(Math.random() * 18); // 28–45 petals
+
+    for(let i = 0; i < count; i++){
+      const petal = document.createElement('div');
+      petal.className = 'petal';
+      petal.textContent = set[Math.floor(Math.random() * set.length)];
+
+      const startX = Math.random() * 100;           // vw
+      const size = 16 + Math.random() * 18;         // px
+      const duration = 2.4 + Math.random() * 2.2;   // seconds
+      const delay = Math.random() * 0.6;
+      const sway = (Math.random() - 0.5) * 80;      // horizontal drift
+
+      petal.style.left = startX + 'vw';
+      petal.style.fontSize = size + 'px';
+      petal.style.animationDuration = duration + 's';
+      petal.style.animationDelay = delay + 's';
+      // custom property for slight horizontal movement via transform in keyframes is limited,
+      // so we add a little inline variation
+      petal.style.setProperty('--sway', sway + 'px');
+
+      document.body.appendChild(petal);
+      setTimeout(() => petal.remove(), (duration + delay) * 1000 + 100);
+    }
+  }
+
+  // Enhance keyframes slightly with sway if supported – fallback is pure vertical
+  // (CSS already has petalFall; we keep it simple and reliable)
+
+  flowerBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    // Long-press or second tap could open picker; for simplicity:
+    // single tap = shower, and we show picker briefly or keep it toggleable
+    showerFlowers();
+  });
+
+  // Toggle picker on long-press of flower button
+  let flowerPressTimer = null;
+  flowerBtn.addEventListener('pointerdown', () => {
+    flowerPressTimer = setTimeout(() => {
+      flowerPicker.classList.toggle('show');
+      flowerPressTimer = null;
+    }, 480);
+  });
+  ['pointerup','pointerleave','pointercancel'].forEach(evt => {
+    flowerBtn.addEventListener(evt, () => {
+      if(flowerPressTimer){ clearTimeout(flowerPressTimer); flowerPressTimer = null; }
+    });
+  });
+
+  // Chip clicks
+  document.querySelectorAll('.flower-chip').forEach(chip => {
+    chip.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setFlower(chip.dataset.flower);
+      flowerPicker.classList.remove('show');
+    });
+  });
+
+  // Setup page flower row
+  const setupFlowerRow = document.getElementById('setupFlowerRow');
+  if(setupFlowerRow){
+    setupFlowerRow.addEventListener('click', e => {
+      const chip = e.target.closest('.flower-chip');
+      if(chip) setFlower(chip.dataset.flower);
+    });
+  }
+
+  // ---------- Focus / Clean mode (tiny top-right arrow) ----------
+  function toggleFocusMode(){
+    const on = document.body.classList.toggle('focus-mode');
+    focusToggle.textContent = on ? '▼' : '▲';
+    focusToggle.title = on ? 'Show controls' : 'Hide controls';
+    if(on) flowerPicker.classList.remove('show');
+  }
+  focusToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleFocusMode();
+  });
+
+  // Escape exits focus mode when not in cinematic
+  document.addEventListener('keydown', e=>{
+    if(e.key === 'Escape' && document.body.classList.contains('focus-mode') && !autoPlaying){
+      document.body.classList.remove('focus-mode');
+      focusToggle.textContent = '▲';
+      focusToggle.title = 'Hide controls';
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
