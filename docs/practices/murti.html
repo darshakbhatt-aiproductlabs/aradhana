@@ -119,13 +119,14 @@
     background: none; border: none; color: var(--ink); padding: 0;
   }
   .offer .dot {
-    width: 48px; height: 48px; border-radius: 50%;
+    width: 52px; height: 52px; border-radius: 50%;
     display: flex; align-items: center; justify-content: center;
-    background: rgba(255,253,251,0.94);
+    background: #fffaf3;
     border: 2px solid color-mix(in srgb, var(--coral-soft) 55%, transparent);
     box-shadow: var(--shadow);
+    padding: 7px;
   }
-  .offer .dot i { width: 18px; height: 18px; border-radius: 50%; display: block; }
+  .offer .dot svg { width: 100%; height: 100%; display: block; }
   .offer .name { font-family: var(--dev); font-size: 10px; font-weight: 800; color: var(--mist); }
   .offer.now .dot { border-color: var(--coral); transform: scale(1.06); }
   .offer.done .dot { border-color: var(--gold); }
@@ -230,30 +231,55 @@
   </div>
 </div>
 <script type="module">
-import { mountMurti, showDeity, playOffer, resize } from "./murti-scene.js?v=u8";
+import { mountMurti, showDeity, playOffer, resize } from "./murti-scene.js?v=u9";
 
 if (window.parent !== window) document.documentElement.classList.add("embedded");
 
 const STEP = {
-  jal: { id: "jal", hi: "जल", en: "Pour jal on the crown", fx: "water", color: "#7eb7e0" },
-  milk: { id: "milk", hi: "दुग्ध", en: "Pour milk on the crown", fx: "milk", color: "#f4efe4" },
-  ghee: { id: "ghee", hi: "घृत", en: "Pour ghee on the crown", fx: "milk", color: "#f0d78c" },
-  oil: { id: "oil", hi: "तैल", en: "Offer sesame oil", fx: "oil", color: "#6b4a1e" },
-  chandan: { id: "chandan", hi: "चन्दन", en: "Sandal on the brow", fx: "chandan", color: "#e2c48a" },
-  tilak: { id: "tilak", hi: "तिलक", en: "Tilak on the forehead", fx: "tilak", color: "#c4452d" },
-  tripundra: { id: "tilak", hi: "त्रिपुण्ड्र", en: "Tripundra on the forehead", fx: "tilak", color: "#c4452d" },
-  sindoor: { id: "tilak", hi: "सिन्दूर", en: "Sindoor on the brow", fx: "tilak", color: "#c4452d" },
-  flowers: { id: "flowers", hi: "पुष्प", en: "Flowers on the head", fx: "flowers", color: "#f2b7a0" },
-  white: { id: "flowers", hi: "श्वेत पुष्प", en: "White flowers on the head", fx: "flowers", color: "#f4efe4" },
-  red: { id: "flowers", hi: "लाल पुष्प", en: "Red flowers on the head", fx: "flowers", color: "#d45b4a" },
-  bilva: { id: "flowers", hi: "बिल्व", en: "Bilva leaves on the head", fx: "bilva", color: "#6a9a4a" },
-  durva: { id: "flowers", hi: "दूर्वा", en: "Durva on the crown", fx: "durva", color: "#6a9a4a" },
-  tulsi: { id: "flowers", hi: "तुलसी", en: "Tulsi at the lotus feet", fx: "tulsi", color: "#3d8b5a" },
-  dhoop: { id: "dhoop", hi: "धूप", en: "Offer incense", fx: "dhoop", color: "#c4b8a8" },
-  aarti: { id: "aarti", hi: "आरती", en: "Circle the lamp", fx: "aarti", color: "#f0b040" },
-  pranam: { id: "pranam", hi: "प्रणाम", en: "Bow to the murti", fx: "pranam", color: "#ff7a5c" },
-  arghya: { id: "jal", hi: "अर्घ्य", en: "Offer arghya to Surya", fx: "arghya", color: "#7eb7e0" },
+  jal: { id: "jal", hi: "जल", en: "Pour jal on the crown", fx: "water", color: "#7eb7e0", icon: "jal" },
+  milk: { id: "milk", hi: "दुग्ध", en: "Pour milk on the crown", fx: "milk", color: "#f4efe4", icon: "milk" },
+  ghee: { id: "ghee", hi: "घृत", en: "Pour ghee on the crown", fx: "milk", color: "#f0d78c", icon: "ghee" },
+  oil: { id: "oil", hi: "तैल", en: "Offer sesame oil", fx: "oil", color: "#6b4a1e", icon: "oil" },
+  chandan: { id: "chandan", hi: "चन्दन", en: "Sandal on the brow", fx: "chandan", color: "#e2c48a", icon: "chandan" },
+  tilak: { id: "tilak", hi: "तिलक", en: "Tilak on the forehead", fx: "tilak", color: "#c4452d", icon: "tilak" },
+  tripundra: { id: "tilak", hi: "त्रिपुण्ड्र", en: "Tripundra on the forehead", fx: "tilak", color: "#c4452d", icon: "tripundra" },
+  sindoor: { id: "tilak", hi: "सिन्दूर", en: "Sindoor on the brow", fx: "tilak", color: "#c4452d", icon: "sindoor" },
+  flowers: { id: "flowers", hi: "पुष्प", en: "Flowers on the head", fx: "flowers", color: "#f2b7a0", icon: "flowers" },
+  white: { id: "flowers", hi: "श्वेत पुष्प", en: "White flowers on the head", fx: "flowers", color: "#f4efe4", icon: "white" },
+  red: { id: "flowers", hi: "लाल पुष्प", en: "Red flowers on the head", fx: "flowers", color: "#d45b4a", icon: "red" },
+  bilva: { id: "flowers", hi: "बिल्व", en: "Bilva leaves on the head", fx: "bilva", color: "#6a9a4a", icon: "bilva" },
+  durva: { id: "flowers", hi: "दूर्वा", en: "Durva on the crown", fx: "durva", color: "#6a9a4a", icon: "durva" },
+  tulsi: { id: "flowers", hi: "तुलसी", en: "Tulsi at the lotus feet", fx: "tulsi", color: "#3d8b5a", icon: "tulsi" },
+  dhoop: { id: "dhoop", hi: "धूप", en: "Offer incense", fx: "dhoop", color: "#c4b8a8", icon: "dhoop" },
+  aarti: { id: "aarti", hi: "आरती", en: "Circle the lamp", fx: "aarti", color: "#f0b040", icon: "aarti" },
+  pranam: { id: "pranam", hi: "प्रणाम", en: "Bow to the murti", fx: "pranam", color: "#ff7a5c", icon: "pranam" },
+  arghya: { id: "jal", hi: "अर्घ्य", en: "Offer arghya to Surya", fx: "arghya", color: "#7eb7e0", icon: "arghya" },
 };
+
+const ICONS = {
+  jal: '<svg viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="24" cy="43" rx="9" ry="2.4" fill="#c9a24a" opacity=".3"/><path d="M16.5 22c0 9 3.2 14.5 7.5 14.5S31.5 31 31.5 22c0-4.2-2-7-7.5-7s-7.5 2.8-7.5 7z" fill="#d7b25a" stroke="#9a7324" stroke-width="1.2"/><ellipse cx="24" cy="15.2" rx="7" ry="2.6" fill="#efd08a"/><rect x="22" y="8" width="4" height="7" rx="1.2" fill="#c9a24a"/><path d="M19 24c2.4 4.2 7.6 4.2 10 0" fill="none" stroke="#6eb0dc" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="21" r="1.6" fill="#8ec8ea"/></svg>',
+  milk: '<svg viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="24" cy="43" rx="9" ry="2.4" fill="#c9a24a" opacity=".3"/><path d="M17 20c0 10 2.8 16 7 16s7-6 7-16c0-3.5-1.6-6.2-7-6.2S17 16.5 17 20z" fill="#f7f1e4" stroke="#d4c4a0" stroke-width="1.2"/><ellipse cx="24" cy="14.4" rx="6.4" ry="2.4" fill="#fff"/><rect x="22.2" y="8.5" width="3.6" height="6" rx="1" fill="#efe6d2"/><path d="M20 23c1.8 3.4 6.2 3.4 8 0" fill="none" stroke="#e8d9b0" stroke-width="2" stroke-linecap="round"/></svg>',
+  ghee: '<svg viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="24" cy="43" rx="9" ry="2.4" fill="#c9a24a" opacity=".3"/><path d="M17 21c0 10 2.8 15.5 7 15.5s7-5.5 7-15.5c0-3.4-1.6-6-7-6s-7 2.6-7 6z" fill="#f0d078" stroke="#c9a24a" stroke-width="1.2"/><ellipse cx="24" cy="15.5" rx="6.2" ry="2.3" fill="#ffe9a8"/></svg>',
+  oil: '<svg viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="24" cy="43" rx="9" ry="2.4" fill="#c9a24a" opacity=".3"/><path d="M18 20c0 10 2.4 16 6 16s6-6 6-16c0-4-2.2-8-6-8s-6 4-6 8z" fill="#6b4a1e" stroke="#4a3010" stroke-width="1.1"/><ellipse cx="24" cy="13" rx="5" ry="2" fill="#8a6230"/></svg>',
+  chandan: '<svg viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="24" cy="30" rx="14" ry="8" fill="#e2c48a" stroke="#c9a24a" stroke-width="1.2"/><ellipse cx="24" cy="27" rx="10" ry="5" fill="#f0d6a0"/><circle cx="24" cy="26" r="3.2" fill="#d4b06a"/></svg>',
+  tilak: '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="10" fill="#c4452d"/><circle cx="24" cy="24" r="4.5" fill="#f0c0a8"/></svg>',
+  tripundra: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="14" width="28" height="4.2" rx="2" fill="#efe6d4"/><rect x="10" y="22" width="28" height="4.2" rx="2" fill="#efe6d4"/><rect x="10" y="30" width="28" height="4.2" rx="2" fill="#efe6d4"/><circle cx="24" cy="24.2" r="3.1" fill="#c4452d"/></svg>',
+  sindoor: '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="10" fill="#c4452d"/><circle cx="24" cy="24" r="4.5" fill="#f0c0a8"/></svg>',
+  flowers: '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="5" fill="#e8c878"/><g fill="#f2b7a0"><ellipse cx="24" cy="12" rx="6" ry="8"/><ellipse cx="24" cy="36" rx="6" ry="8"/><ellipse cx="12" cy="24" rx="8" ry="6"/><ellipse cx="36" cy="24" rx="8" ry="6"/></g></svg>',
+  white: '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="5" fill="#e8c878"/><g fill="#f6efe4"><ellipse cx="24" cy="12" rx="6" ry="8"/><ellipse cx="24" cy="36" rx="6" ry="8"/><ellipse cx="12" cy="24" rx="8" ry="6"/><ellipse cx="36" cy="24" rx="8" ry="6"/></g></svg>',
+  red: '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="5" fill="#e8c878"/><g fill="#d45b4a"><ellipse cx="24" cy="12" rx="6" ry="8"/><ellipse cx="24" cy="36" rx="6" ry="8"/><ellipse cx="12" cy="24" rx="8" ry="6"/><ellipse cx="36" cy="24" rx="8" ry="6"/></g></svg>',
+  bilva: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 42c0-10 8-16 8-24S28 6 24 14C20 6 16 10 16 18s8 14 8 24z" fill="#6a9a4a"/><path d="M24 42c0-10-8-16-8-24"/><path d="M16 20c-6-2-9 2-10 8 6 0 10-2 14-8z" fill="#7eac58"/><path d="M32 20c6-2 9 2 10 8-6 0-10-2-14-8z" fill="#7eac58"/></svg>',
+  durva: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M22 42c-2-16-10-24-14-32 10 4 14 16 14 32z" fill="#6a9a4a"/><path d="M24 42c0-18 2-28 8-34-2 12 0 22-8 34z" fill="#7eac58"/><path d="M26 42c2-14 10-22 14-30-8 6-12 16-14 30z" fill="#5d8a40"/></svg>',
+  tulsi: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M24 40c0-8 10-14 10-22S28 6 24 14C20 6 14 10 14 18s10 14 10 22z" fill="#3d8b5a"/><ellipse cx="16" cy="22" rx="7" ry="5" fill="#4ea06c"/><ellipse cx="32" cy="22" rx="7" ry="5" fill="#4ea06c"/></svg>',
+  dhoop: '<svg viewBox="0 0 48 48" aria-hidden="true"><rect x="22.2" y="16" width="3.6" height="24" rx="1.4" fill="#5a3a22"/><circle cx="24" cy="15" r="2.4" fill="#ff6a20"/><path d="M24 14c2-4 1-8-1-10" fill="none" stroke="#c4b8a8" stroke-width="2" stroke-linecap="round"/><path d="M25 12c3-4 2-8 0-11" fill="none" stroke="#d8cfc4" stroke-width="1.6" stroke-linecap="round"/></svg>',
+  aarti: '<svg viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="24" cy="32" rx="16" ry="8" fill="#d4a84a" stroke="#a07828" stroke-width="1.2"/><ellipse cx="24" cy="30" rx="11" ry="5" fill="#e8c878"/><path d="M24 12c4 6 4 10 0 14-4-4-4-8 0-14z" fill="#ffb020"/><circle cx="24" cy="14" r="2" fill="#fff6d0"/></svg>',
+  pranam: '<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M20 40c-4-2-8-10-8-18 0-6 3-10 8-10 2 0 3 1 4 3v25c-1.2.4-2.6.4-4 0z" fill="#f2c2a8"/><path d="M28 40c4-2 8-10 8-18 0-6-3-10-8-10-2 0-3 1-4 3v25c1.2.4 2.6.4 4 0z" fill="#e8b498"/><path d="M24 16v22" stroke="#d49a78" stroke-width="1.4"/></svg>',
+  arghya: '<svg viewBox="0 0 48 48" aria-hidden="true"><ellipse cx="24" cy="43" rx="9" ry="2.4" fill="#c9a24a" opacity=".3"/><path d="M16.5 22c0 9 3.2 14.5 7.5 14.5S31.5 31 31.5 22c0-4.2-2-7-7.5-7s-7.5 2.8-7.5 7z" fill="#d7b25a" stroke="#9a7324" stroke-width="1.2"/><path d="M19 24c2.4 4.2 7.6 4.2 10 0" fill="none" stroke="#6eb0dc" stroke-width="2" stroke-linecap="round"/></svg>',
+};
+
+function iconFor(s) {
+  return ICONS[s.icon] || ICONS[s.fx] || ICONS.jal;
+}
 
 const FAMILIES = {
   ganesha: ["jal", "milk", "chandan", "tilak", "durva", "dhoop", "aarti", "pranam"],
@@ -340,7 +366,7 @@ function buildThali() {
   STEPS.forEach((s, i) => {
     const b = document.createElement("button");
     b.type = "button"; b.className = "offer"; b.dataset.id = s.id;
-    b.innerHTML = `<span class="dot"><i style="background:${s.color}"></i></span><span class="name">${s.hi}</span>`;
+    b.innerHTML = `<span class="dot">${iconFor(s)}</span><span class="name">${s.hi}</span>`;
     b.addEventListener("click", () => doStep(i, true));
     thali.appendChild(b);
   });
@@ -490,7 +516,7 @@ fileInput.addEventListener("change", (e) => {
 
 async function boot() {
   try {
-    const r = await fetch("./deities.json?v=u8");
+    const r = await fetch("./deities.json?v=u9");
     const data = await r.json();
     MAIN = data.deities || [];
   } catch (e) {

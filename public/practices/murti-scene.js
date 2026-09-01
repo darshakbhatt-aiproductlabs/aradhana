@@ -55,24 +55,25 @@ const WET_VERT = [
 const WET_FRAG = [
   "uniform sampler2D uWet;",
   "uniform float uKind;",
+  "uniform float uFade;",
   "varying vec2 vUv;",
   "void main() {",
   "  vec4 w = texture2D(uWet, vUv);",
-  "  if (w.a < 0.02) discard;",
-  "  float spec = pow(w.r, 2.2);",
+  "  if (w.a < 0.03 || uFade < 0.02) discard;",
+  "  float spec = pow(w.r, 1.8);",
   "  vec3 col;",
   "  float alpha;",
   "  if (uKind < 0.5) {",
-  "    col = mix(vec3(0.42, 0.78, 0.96), vec3(0.95, 0.99, 1.0), spec);",
-  "    alpha = w.a * 0.62 + spec * 0.38;",
+  "    col = mix(vec3(0.55, 0.84, 0.98), vec3(0.95, 0.99, 1.0), spec);",
+  "    alpha = (w.a * 0.22 + spec * 0.18) * uFade;",
   "  } else if (uKind < 1.5) {",
-  "    col = mix(vec3(0.97, 0.94, 0.84), vec3(1.0, 0.99, 0.94), spec);",
-  "    alpha = w.a * 0.88 + spec * 0.1;",
+  "    col = mix(vec3(0.98, 0.95, 0.86), vec3(1.0, 0.99, 0.94), spec);",
+  "    alpha = (w.a * 0.32 + spec * 0.12) * uFade;",
   "  } else {",
-  "    col = mix(vec3(0.50, 0.32, 0.08), vec3(0.90, 0.70, 0.28), spec);",
-  "    alpha = w.a * 0.8;",
+  "    col = mix(vec3(0.55, 0.36, 0.10), vec3(0.90, 0.70, 0.28), spec);",
+  "    alpha = w.a * 0.28 * uFade;",
   "  }",
-  "  gl_FragColor = vec4(col, alpha);",
+  "  gl_FragColor = vec4(col, clamp(alpha, 0.0, 0.45));",
   "}",
 ].join("\n");
 
@@ -382,9 +383,14 @@ function streakMatFor(kind) {
 
 function pedestal() {
   const g = new THREE.Group();
-  g.add(mesh(new THREE.CylinderGeometry(0.7, 0.78, 0.1, 40), mats.marble, 0, 0.05, 0));
-  g.add(mesh(new THREE.CylinderGeometry(0.52, 0.6, 0.18, 32), mats.sand, 0, 0.18, 0));
-  g.add(mesh(new THREE.CylinderGeometry(0.54, 0.52, 0.045, 32), mats.gold, 0, 0.3, 0));
+  const shadow = new THREE.Mesh(
+    new THREE.CircleGeometry(0.46, 36),
+    new THREE.MeshBasicMaterial({ color: 0xc4a07a, transparent: true, opacity: 0.16, depthWrite: false }),
+  );
+  shadow.rotation.x = -Math.PI / 2;
+  shadow.position.y = 0.012;
+  shadow.castShadow = false;
+  g.add(shadow);
   return g;
 }
 
@@ -535,7 +541,7 @@ async function makeStatue(spec) {
   const aspect = punched.w / punched.h;
   const height = 1.72;
   const width = Math.min(1.22, height * aspect);
-  const y0 = 0.34 + height / 2;
+  const y0 = 0.1 + height / 2;
   const B = bodyMap(spec);
 
   const halo = makeHalo();
@@ -566,7 +572,7 @@ async function makeStatue(spec) {
   const wetTex = new THREE.CanvasTexture(wetC);
   wetTex.needsUpdate = true;
   const wetMat = new THREE.ShaderMaterial({
-    uniforms: { uWet: { value: wetTex }, uKind: { value: 0 } },
+    uniforms: { uWet: { value: wetTex }, uKind: { value: 0 }, uFade: { value: 0 } },
     vertexShader: WET_VERT,
     fragmentShader: WET_FRAG,
     transparent: true,
@@ -585,11 +591,11 @@ async function makeStatue(spec) {
   const chest = at(B.crownX, 0.52, zFace);
   const hands = at(B.crownX, 0.58, zFace);
   const feet = at(B.feetX, B.feetY, zFace);
-  const base = dummy(0, 0.34, 0.08);
+  const base = dummy(0, 0.1, 0.08);
   g.add(crown, brow, chest, hands, feet, base);
 
   const bounds = rowBounds(punched.data, punched.w, punched.h);
-  const puddle = mesh(new THREE.CircleGeometry(0.2, 28), mats.water.clone(), 0, 0.331, 0.1);
+  const puddle = mesh(new THREE.CircleGeometry(0.16, 28), mats.water.clone(), 0, 0.11, 0.1);
   puddle.rotation.x = -Math.PI / 2;
   puddle.material.transparent = true;
   puddle.material.opacity = 0;
@@ -601,6 +607,7 @@ async function makeStatue(spec) {
   g.userData.frontMat = matFront;
   g.userData.halo = halo;
   g.userData.puddle = puddle;
+  g.userData.wetMesh = wetMesh;
   g.userData.kind = "statue";
   g.userData.deityId = spec.id;
   g.userData.family = spec.family;
@@ -722,16 +729,20 @@ function spawnMist(pos) {
 function beginWet(kind) {
   if (!current || !current.userData.wet || !current.userData.pixel) return;
   const px = current.userData.pixel;
-  if (current.userData.wet.mat) current.userData.wet.mat = null;
-  const meshWet = current.children.find((c) => c.material && c.material.uniforms && c.material.uniforms.uKind);
-  if (meshWet) meshWet.material.uniforms.uKind.value = kind === "oil" ? 2 : kind === "milk" ? 1 : 0;
+  const meshWet = current.userData.wetMesh;
+  if (meshWet && meshWet.material.uniforms) {
+    meshWet.material.uniforms.uKind.value = kind === "oil" ? 2 : kind === "milk" ? 1 : 0;
+    meshWet.material.uniforms.uFade.value = 1;
+  }
   wetSim = {
     kind,
     t: 0,
-    dur: 1.9,
+    dur: 1.55,
     x: px.crown.x,
     y0: px.crown.y,
     prev: px.crown.y,
+    phase: "flow",
+    fadeT: 0,
   };
 }
 
@@ -741,21 +752,36 @@ function clearWet() {
   W.imgData.data.fill(0);
   W.ctx.putImageData(W.imgData, 0, 0);
   W.tex.needsUpdate = true;
+  if (current.userData.wetMesh && current.userData.wetMesh.material.uniforms.uFade) {
+    current.userData.wetMesh.material.uniforms.uFade.value = 0;
+  }
   if (current.userData.puddle) current.userData.puddle.material.opacity = 0;
 }
 
 function stepWet(dt) {
   if (!wetSim || !current || !current.userData.wet) return;
   const W = current.userData.wet;
+  const meshWet = current.userData.wetMesh;
+  if (wetSim.phase === "fade") {
+    wetSim.fadeT += dt;
+    const f = Math.max(0, 1 - wetSim.fadeT / 1.35);
+    if (meshWet && meshWet.material.uniforms.uFade) meshWet.material.uniforms.uFade.value = f;
+    if (current.userData.puddle) current.userData.puddle.material.opacity = 0.22 * f;
+    if (f <= 0) {
+      clearWet();
+      wetSim = null;
+    }
+    return;
+  }
   wetSim.t += dt;
   const u = Math.min(1, wetSim.t / wetSim.dur);
   const eased = u * u * (3 - 2 * u);
   const front = wetSim.y0 + (W.h - 1 - wetSim.y0) * eased;
   const isMilk = wetSim.kind === "milk";
   const isOil = wetSim.kind === "oil";
-  const cr = isOil ? 140 : isMilk ? 252 : 70;
-  const cg = isOil ? 100 : isMilk ? 244 : 196;
-  const cb = isOil ? 40 : isMilk ? 214 : 245;
+  const cr = isOil ? 140 : isMilk ? 252 : 110;
+  const cg = isOil ? 100 : isMilk ? 246 : 210;
+  const cb = isOil ? 40 : isMilk ? 220 : 248;
   const buf = W.imgData.data;
   const alpha = W.alpha.data;
   const yStart = Math.max(0, wetSim.prev | 0);
@@ -766,10 +792,10 @@ function stepWet(dt) {
     const maxX = W.maxX[y];
     if (minX < 0) continue;
     const mid = (minX + maxX) * 0.5;
-    const left = minX * 0.35 + mid * 0.65;
-    const right = maxX * 0.35 + mid * 0.65;
-    const xs = [cx, left, right];
-    const sig = [20, 12, 12];
+    const left = cx * 0.55 + minX * 0.45;
+    const right = cx * 0.55 + maxX * 0.45;
+    const xs = [cx, (cx + left) * 0.5, (cx + right) * 0.5];
+    const sig = [7, 4.5, 4.5];
     for (let x = minX; x <= maxX; x++) {
       const i = (y * W.w + x) * 4;
       if (alpha[i + 3] < 40) continue;
@@ -778,25 +804,24 @@ function stepWet(dt) {
         const dlt = x - xs[k];
         inf = Math.max(inf, Math.exp(-(dlt * dlt) / (sig[k] * sig[k])));
       }
-      if (inf < 0.08) continue;
-      const fade = 0.6 + 0.4 * (1 - (y - wetSim.y0) / Math.max(1, W.h - wetSim.y0));
-      const add = inf * fade * (isMilk ? 180 : isOil ? 150 : 150);
+      if (inf < 0.12) continue;
+      const fade = 0.55 + 0.45 * (1 - (y - wetSim.y0) / Math.max(1, W.h - wetSim.y0));
+      const add = inf * fade * (isMilk ? 70 : isOil ? 55 : 48);
       buf[i] = Math.max(buf[i], cr);
       buf[i + 1] = Math.max(buf[i + 1], cg);
       buf[i + 2] = Math.max(buf[i + 2], cb);
-      buf[i + 3] = Math.min(235, buf[i + 3] + add);
-      if (Math.abs(x - cx) < 3) buf[i] = Math.min(255, buf[i] + 70);
+      buf[i + 3] = Math.min(140, buf[i + 3] + add);
     }
   }
   wetSim.prev = front;
   W.ctx.putImageData(W.imgData, 0, 0);
   W.tex.needsUpdate = true;
   if (current.userData.puddle) {
-    current.userData.puddle.material.opacity = Math.min(0.55, u * 0.55);
-    const s = 0.7 + u * 0.55;
+    current.userData.puddle.material.opacity = Math.min(0.28, u * 0.28);
+    const s = 0.55 + u * 0.35;
     current.userData.puddle.scale.set(s, s, 1);
   }
-  if (u >= 1) wetSim = null;
+  if (u >= 1) wetSim.phase = "fade";
 }
 
 function pour(kind) {
@@ -1078,21 +1103,21 @@ function incense() {
   ensureFxMats();
   const g = new THREE.Group();
   const wood = new THREE.MeshStandardMaterial({ color: 0x3a2414, roughness: 0.78, metalness: 0.04 });
-  const stick = mesh(new THREE.CylinderGeometry(0.013, 0.016, 0.52, 12), wood);
-  stick.rotation.z = 0.32;
-  stick.rotation.x = 0.12;
+  const stick = mesh(new THREE.CylinderGeometry(0.008, 0.01, 0.34, 10), wood);
+  stick.rotation.z = 0.22;
+  stick.rotation.x = 0.08;
   g.add(stick);
   const holder = lathe(
     [[0.0, 0], [0.045, 0.01], [0.05, 0.03], [0.03, 0.035], [0.0, 0.036]],
     mats.gold,
   );
-  holder.position.set(0.07, -0.22, 0);
+  holder.position.set(0.04, -0.15, 0);
   g.add(holder);
   const ember = new THREE.Mesh(
     new THREE.SphereGeometry(0.02, 12, 10),
     new THREE.MeshBasicMaterial({ color: 0xff4a10, toneMapped: false }),
   );
-  ember.position.set(-0.078, 0.24, 0.02);
+  ember.position.set(-0.038, 0.155, 0.01);
   g.add(ember);
   const tipGlow = new THREE.Sprite(new THREE.SpriteMaterial({
     map: radialTex([
@@ -1102,13 +1127,15 @@ function incense() {
     ], 64),
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
   }));
-  tipGlow.scale.set(0.14, 0.14, 1);
+  tipGlow.scale.set(0.09, 0.09, 1);
   tipGlow.position.copy(ember.position);
   g.add(tipGlow);
-  const glow = new THREE.PointLight(0xff6a28, 1.1, 2.0);
+  const glow = new THREE.PointLight(0xff6a28, 0.9, 1.6);
   glow.position.copy(ember.position);
   g.add(glow);
-  g.position.set(0.58, 0.62, 0.92);
+  const chest = current ? worldOf(current.userData.anchors.chest) : new THREE.Vector3(0, 0.9, 0);
+  const base = current ? worldOf(current.userData.anchors.base) : new THREE.Vector3(0, 0.1, 0);
+  g.position.set(chest.x + 0.2, (chest.y * 0.35 + base.y * 0.65) + 0.12, 0.2);
   g.userData.ember = ember;
   g.userData.tipGlow = tipGlow;
   g.userData.t = 0;
@@ -1166,19 +1193,91 @@ function makeDiyaGroup() {
   const lamp = new THREE.Sprite(new THREE.SpriteMaterial({
     map: diyaSpriteMap, transparent: true, depthWrite: false, toneMapped: false,
   }));
-  lamp.scale.set(0.28, 0.35, 1);
+  lamp.scale.set(0.22, 0.28, 1);
   lamp.position.set(0, 0.04, 0);
   lamp.userData.kind = "diyaSprite";
   g.add(lamp);
-  const flame = flameSprite(0.1, 0.16);
-  flame.position.set(0, 0.16, 0.01);
+  const flame = flameSprite(0.08, 0.13);
+  flame.position.set(0, 0.13, 0.01);
   g.add(flame);
-  const light = new THREE.PointLight(0xffb060, 1.2, 3.4);
-  light.position.set(0, 0.16, 0.04);
+  const light = new THREE.PointLight(0xffb060, 0.9, 2.6);
+  light.position.set(0, 0.14, 0.04);
   g.add(light);
   g.userData.flame = flame;
   g.userData.light = light;
   g.userData.lamp = lamp;
+  return g;
+}
+
+function aartiThaliTex() {
+  const c = document.createElement("canvas");
+  c.width = 256;
+  c.height = 256;
+  const ctx = c.getContext("2d");
+  const plate = ctx.createRadialGradient(128, 138, 16, 128, 138, 112);
+  plate.addColorStop(0, "#f3d78a");
+  plate.addColorStop(0.45, "#d4a84a");
+  plate.addColorStop(0.78, "#a07828");
+  plate.addColorStop(1, "rgba(90, 55, 12, 0)");
+  ctx.fillStyle = plate;
+  ctx.beginPath();
+  ctx.ellipse(128, 148, 108, 74, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "#f0d48a";
+  ctx.lineWidth = 7;
+  ctx.beginPath();
+  ctx.ellipse(128, 148, 92, 60, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.strokeStyle = "rgba(120, 70, 16, 0.45)";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.ellipse(128, 148, 74, 46, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  const wicks = [
+    [128, 122],
+    [90, 150],
+    [166, 150],
+    [104, 114],
+    [152, 114],
+  ];
+  wicks.forEach(([x, y]) => {
+    ctx.fillStyle = "#c4923a";
+    ctx.beginPath();
+    ctx.ellipse(x, y + 10, 12, 5.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#8a5a18";
+    ctx.fillRect(x - 1.2, y + 2, 2.4, 8);
+    const fg = ctx.createRadialGradient(x, y - 6, 1, x, y, 16);
+    fg.addColorStop(0, "rgba(255,255,220,1)");
+    fg.addColorStop(0.28, "rgba(255,190,50,0.95)");
+    fg.addColorStop(0.65, "rgba(255,90,10,0.45)");
+    fg.addColorStop(1, "rgba(255,40,0,0)");
+    ctx.fillStyle = fg;
+    ctx.beginPath();
+    ctx.moveTo(x, y - 24);
+    ctx.quadraticCurveTo(x + 10, y - 2, x, y + 5);
+    ctx.quadraticCurveTo(x - 10, y - 2, x, y - 24);
+    ctx.fill();
+  });
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.needsUpdate = true;
+  return t;
+}
+
+function makeAartiThali() {
+  const g = new THREE.Group();
+  const plate = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: aartiThaliTex(), transparent: true, depthWrite: false, toneMapped: false, depthTest: false,
+  }));
+  plate.scale.set(0.4, 0.4, 1);
+  plate.renderOrder = 12;
+  g.add(plate);
+  const light = new THREE.PointLight(0xffc060, 1.35, 3.6);
+  light.position.set(0, 0.04, 0.06);
+  g.add(light);
+  g.userData.plate = plate;
+  g.userData.light = light;
   return g;
 }
 
@@ -1216,7 +1315,7 @@ function aarti() {
     fxRoot.remove(aartiLamp);
     aartiLamp = null;
   }
-  aartiLamp = makeDiyaGroup();
+  aartiLamp = makeAartiThali();
   aartiT = 0;
   fxRoot.add(aartiLamp);
 }
@@ -1261,9 +1360,9 @@ function startRivulets(kind) {
   ensureFxMats();
   const from = worldOf(current.userData.anchors.crown);
   const to = worldOf(current.userData.anchors.base || current.userData.anchors.feet);
-  const n = reduced ? 6 : 12;
-  const thick = kind === "milk" ? 0.11 : kind === "oil" ? 0.08 : 0.085;
-  const tall = kind === "milk" ? 0.34 : 0.28;
+  const n = reduced ? 4 : 7;
+  const thick = kind === "milk" ? 0.048 : kind === "oil" ? 0.036 : 0.038;
+  const tall = kind === "milk" ? 0.16 : 0.13;
   for (let i = 0; i < n; i++) {
     const s = new THREE.Sprite(streakMatFor(kind).clone());
     s.material.userData.localMat = true;
@@ -1272,13 +1371,13 @@ function startRivulets(kind) {
     s.visible = false;
     s.renderOrder = 6;
     fxRoot.add(s);
-    const xOff = (i / (n - 1) - 0.5) * 0.22;
+    const xOff = (i / Math.max(1, n - 1) - 0.5) * 0.1;
     rivulets.push({
       sprite: s,
-      from: from.clone().add(new THREE.Vector3(xOff * 0.4, 0.02, 0.03)),
-      to: to.clone().add(new THREE.Vector3(xOff, 0.04, 0.05)),
-      t: -i * 0.09,
-      dur: kind === "milk" ? 2.1 : 1.55,
+      from: from.clone().add(new THREE.Vector3(xOff * 0.3, 0.01, 0.04)),
+      to: to.clone().add(new THREE.Vector3(xOff, 0.03, 0.05)),
+      t: -i * 0.12,
+      dur: kind === "milk" ? 1.45 : 1.15,
       kind,
     });
   }
@@ -1294,8 +1393,8 @@ function stepRivulets(dt) {
     const e = u * u * (3 - 2 * u);
     r.sprite.position.lerpVectors(r.from, r.to, e);
     r.sprite.position.x += Math.sin(e * 9 + i) * 0.012;
-    const fade = u > 0.75 ? 1 - (u - 0.75) / 0.25 : 1;
-    r.sprite.material.opacity = 0.9 * fade;
+    const fade = u > 0.62 ? 1 - (u - 0.62) / 0.38 : 1;
+    r.sprite.material.opacity = 0.72 * fade;
     if (u >= 1) {
       fxRoot.remove(r.sprite);
       rivulets.splice(i, 1);
@@ -1334,22 +1433,27 @@ function stepSmoke(dt) {
 function stepAarti(dt) {
   if (!aartiLamp || !current) return;
   aartiT += dt;
-  const face = worldOf(current.userData.anchors.forehead);
-  const r = Math.max(0.18, (current.userData.faceR || 0.16) + 0.06);
-  const t = aartiT * 1.7;
+  const crown = worldOf(current.userData.anchors.crown);
+  const feet = worldOf(current.userData.anchors.feet || current.userData.anchors.base);
+  const cx = (crown.x + feet.x) * 0.5;
+  const topY = crown.y - 0.02;
+  const botY = feet.y + 0.22;
+  const midY = (topY + botY) * 0.5;
+  const span = Math.max(0.22, (topY - botY) * 0.5);
+  const spin = aartiT * 2.6;
   aartiLamp.position.set(
-    face.x + Math.sin(t) * r,
-    face.y - 0.02 + Math.sin(t * 2) * 0.04,
-    face.z + 0.18 + Math.cos(t) * r * 0.45,
+    cx + Math.sin(spin) * 0.2,
+    midY + Math.cos(spin) * span,
+    0.5,
   );
-  if (aartiLamp.userData.flame) {
-    const flick = 1 + Math.sin(aartiT * 18) * 0.08 + Math.sin(aartiT * 31) * 0.05;
-    aartiLamp.userData.flame.scale.set(0.09 * flick, 0.16 * flick, 1);
+  if (aartiLamp.userData.plate) {
+    const flick = 1 + Math.sin(aartiT * 16) * 0.03;
+    aartiLamp.userData.plate.scale.set(0.4 * flick, 0.4 * flick, 1);
   }
   if (aartiLamp.userData.light) {
-    aartiLamp.userData.light.intensity = 1.05 + Math.sin(aartiT * 22) * 0.2;
+    aartiLamp.userData.light.intensity = 1.2 + Math.sin(aartiT * 20) * 0.22;
   }
-  if (aartiT > 3.6) { fxRoot.remove(aartiLamp); aartiLamp = null; }
+  if (aartiT > 6.2) { fxRoot.remove(aartiLamp); aartiLamp = null; }
 }
 
 function stepHalo(dt) {
@@ -1421,14 +1525,12 @@ function loop(t) {
   renderer.render(scene, camera);
 }
 
-function clearFx() {
-  [...drops, ...petals, ...smokes, ...mists].forEach((o) => fxRoot.remove(o));
-  drops.length = 0; petals.length = 0; smokes.length = 0; mists.length = 0;
+function clearTransientFx() {
+  [...drops, ...smokes, ...mists].forEach((o) => fxRoot.remove(o));
+  drops.length = 0; smokes.length = 0; mists.length = 0;
   rivulets.forEach((r) => fxRoot.remove(r.sprite));
   rivulets.length = 0;
   if (incenseStick) { fxRoot.remove(incenseStick); incenseStick = null; }
-  marks.forEach((m) => { if (m.parent) m.parent.remove(m); });
-  marks.length = 0;
   if (aartiLamp) { fxRoot.remove(aartiLamp); aartiLamp = null; }
   if (kalash) kalash.visible = false;
   kalashAnim = null;
@@ -1440,26 +1542,23 @@ function clearFx() {
   clearWet();
 }
 
+function clearFx() {
+  clearTransientFx();
+  [...petals].forEach((o) => fxRoot.remove(o));
+  petals.length = 0;
+  marks.forEach((m) => { if (m.parent) m.parent.remove(m); });
+  marks.length = 0;
+}
+
 function buildSanctum() {
   const g = new THREE.Group();
-  const wall = mesh(new THREE.BoxGeometry(5.4, 3.5, 0.18), mats.sand, 0, 1.55, -1.85);
-  wall.castShadow = false;
-  g.add(wall);
-  const flames = [];
-  function diya(x, z) {
-    const d = makeDiyaGroup();
-    d.position.set(x, 0.4, z);
-    if (d.userData.flame) flames.push(d.userData.flame);
-    return d;
-  }
-  g.add(diya(-0.95, 0.55), diya(0.95, 0.55));
-  g.userData.flames = flames;
+  g.userData.flames = [];
   return g;
 }
 
 function startReveal() {
-  const end = { pos: new THREE.Vector3(0, 1.14, 2.38), target: new THREE.Vector3(0, 1.06, 0) };
-  const from = end.pos.clone().add(new THREE.Vector3(0, 0.04, 0.85));
+  const end = { pos: new THREE.Vector3(0, 1.02, 3.42), target: new THREE.Vector3(0, 0.94, 0) };
+  const from = end.pos.clone().add(new THREE.Vector3(0, 0.04, 0.38));
   camera.position.copy(from);
   camera.up.set(0, 1, 0);
   controls.target.copy(end.target);
@@ -1468,10 +1567,10 @@ function startReveal() {
   controls.enableRotate = false;
   controls.enablePan = false;
   controls.enabled = false;
-  if (current && current.userData.frontMat) current.userData.frontMat.opacity = 0.05;
-  if (sunLight) sunLight.intensity = 0.35;
-  if (hemLight) hemLight.intensity = 0.35;
-  revealAnim = reduced ? null : { t: 0, dur: 1.6, from, to: end.pos, target: end.target };
+  if (current && current.userData.frontMat) current.userData.frontMat.opacity = 0.08;
+  if (sunLight) sunLight.intensity = 0.4;
+  if (hemLight) hemLight.intensity = 0.4;
+  revealAnim = reduced ? null : { t: 0, dur: 1.15, from, to: end.pos, target: end.target };
   if (!revealAnim) {
     camera.position.copy(end.pos);
     if (current && current.userData.frontMat) current.userData.frontMat.opacity = 1;
@@ -1489,8 +1588,8 @@ export function mountMurti(canvas) {
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xf6e4d0);
   scene.fog = new THREE.Fog(0xf6e4d0, 8, 16);
-  camera = new THREE.PerspectiveCamera(32, 1, 0.1, 40);
-  camera.position.set(0, 1.14, 2.38);
+  camera = new THREE.PerspectiveCamera(38, 1, 0.1, 40);
+  camera.position.set(0, 1.02, 3.42);
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.shadowMap.enabled = true;
@@ -1516,15 +1615,12 @@ export function mountMurti(canvas) {
   fillLight.position.set(-2, 1.8, 1.4);
   scene.add(fillLight);
 
-  const floor = mesh(new THREE.CircleGeometry(4.8, 48), mats.marble, 0, 0, 0);
+  const floor = mesh(new THREE.CircleGeometry(5.2, 48), mats.cream, 0, 0, 0);
   floor.rotation.x = -Math.PI / 2;
   floor.receiveShadow = true;
   floor.castShadow = false;
+  floor.material = new THREE.MeshBasicMaterial({ color: 0xf6e4d0 });
   scene.add(floor);
-  const inlay = mesh(new THREE.RingGeometry(0.68, 0.84, 40), mats.gold, 0, 0.01, 0);
-  inlay.rotation.x = -Math.PI / 2;
-  inlay.castShadow = false;
-  scene.add(inlay);
 
   sanctumRoot = buildSanctum();
   scene.add(sanctumRoot);
@@ -1540,9 +1636,9 @@ export function mountMurti(canvas) {
   controls.dampingFactor = 0.14;
   controls.enablePan = false;
   controls.enableRotate = false;
-  controls.minDistance = 1.85;
-  controls.maxDistance = 3.6;
-  controls.target.set(0, 1.06, 0);
+  controls.minDistance = 2.7;
+  controls.maxDistance = 4.8;
+  controls.target.set(0, 0.94, 0);
   controls.autoRotate = false;
 
   loadProps();
@@ -1584,6 +1680,7 @@ export async function showDeity(spec) {
 }
 
 export function playOffer(kind) {
+  clearTransientFx();
   if (kind === "water" || kind === "milk" || kind === "oil") pour(kind);
   else if (kind === "arghya") arghya();
   else if (kind === "tilak" || kind === "chandan") mark(kind);
