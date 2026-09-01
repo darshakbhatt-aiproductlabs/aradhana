@@ -25,6 +25,18 @@ let diyaMap = null;
 let flameMap = null;
 let flameFallback = null;
 let tubeGeoDummy = null;
+let sunLight = null;
+let fillLight = null;
+let hemLight = null;
+let revealAnim = null;
+let wetSim = null;
+let applicator = null;
+let clockT = 0;
+let auraLight = null;
+let motes = null;
+let statueMats = [];
+const _side = new THREE.Vector3();
+const _dir = new THREE.Vector3();
 
 
 const ANCHORS = {
@@ -52,6 +64,102 @@ const BROW_T = {
   kali: 0.18,
   custom: 0.26,
 };
+
+const FACE_FRAC = {
+  ganesha: { crown: 0.08, brow: 0.54, inset: 0.4 },
+  shiva: { crown: 0.1, brow: 0.5, inset: 0.36 },
+  "shiva-parvati": { crown: 0.1, brow: 0.48, inset: 0.34 },
+  nataraja: { crown: 0.16, brow: 0.46, inset: 0.36 },
+  shivling: { crown: 0.08, brow: 0.28, inset: 0.32 },
+  vishnu: { crown: 0.1, brow: 0.44, inset: 0.34 },
+  venkateswara: { crown: 0.1, brow: 0.42, inset: 0.34 },
+  krishna: { crown: 0.12, brow: 0.46, inset: 0.34 },
+  "radha-krishna": { crown: 0.1, brow: 0.46, inset: 0.32 },
+  rama: { crown: 0.1, brow: 0.44, inset: 0.34 },
+  hanuman: { crown: 0.1, brow: 0.46, inset: 0.34 },
+  durga: { crown: 0.12, brow: 0.46, inset: 0.34 },
+  kali: { crown: 0.14, brow: 0.48, inset: 0.36 },
+  saraswati: { crown: 0.1, brow: 0.46, inset: 0.34 },
+  brahma: { crown: 0.16, brow: 0.48, inset: 0.34 },
+  surya: { crown: 0.16, brow: 0.44, inset: 0.34 },
+  murugan: { crown: 0.1, brow: 0.44, inset: 0.34 },
+  ayyappa: { crown: 0.12, brow: 0.46, inset: 0.36 },
+  dattatreya: { crown: 0.12, brow: 0.46, inset: 0.34 },
+  shani: { crown: 0.1, brow: 0.46, inset: 0.34 },
+  custom: { crown: 0.1, brow: 0.48, inset: 0.34 },
+};
+
+const WATER_VERT = [
+  "varying vec2 vUv;",
+  "void main() {",
+  "  vUv = uv;",
+  "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);",
+  "}",
+].join("\n");
+
+const WATER_FRAG = [
+  "uniform float uTime;",
+  "uniform float uFill;",
+  "uniform vec3 uColor;",
+  "uniform float uOpacity;",
+  "varying vec2 vUv;",
+  "void main() {",
+  "  if (vUv.x > uFill + 0.002) discard;",
+  "  float across = vUv.y;",
+  "  float core = 1.0 - abs(across - 0.5) * 2.0;",
+  "  core = max(0.0, core);",
+  "  float n1 = sin(vUv.x * 54.0 - uTime * 16.0 + across * 8.0);",
+  "  float n2 = sin(vUv.x * 96.0 + uTime * 23.0 + across * 14.0);",
+  "  float caustic = 0.55 + 0.45 * n1 * n2;",
+  "  float highlight = pow(core, 3.4) * caustic;",
+  "  vec3 col = mix(uColor * 0.42, vec3(0.93, 0.97, 1.0), highlight);",
+  "  float alpha = uOpacity * pow(core, 1.35) * (0.28 + 0.72 * caustic);",
+  "  alpha *= smoothstep(0.0, 0.05, vUv.x) * smoothstep(0.0, 0.1, uFill);",
+  "  gl_FragColor = vec4(col, alpha);",
+  "}",
+].join("\n");
+
+const WET_VERT = [
+  "varying vec2 vUv;",
+  "void main() {",
+  "  vUv = uv;",
+  "  gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);",
+  "}",
+].join("\n");
+
+const WET_FRAG = [
+  "uniform sampler2D uWet;",
+  "uniform float uKind;",
+  "varying vec2 vUv;",
+  "void main() {",
+  "  vec4 w = texture2D(uWet, vUv);",
+  "  if (w.a < 0.02) discard;",
+  "  float spec = pow(w.r, 2.8);",
+  "  vec3 dark = mix(vec3(0.09, 0.13, 0.16), vec3(0.42, 0.36, 0.28), uKind);",
+  "  vec3 gloss = mix(vec3(0.78, 0.9, 0.96), vec3(0.96, 0.93, 0.86), uKind);",
+  "  vec3 col = mix(dark, gloss, spec);",
+  "  float alpha = w.a * 0.58 + spec * 0.42;",
+  "  gl_FragColor = vec4(col, alpha);",
+  "}",
+].join("\n");
+
+function bodyMap(spec) {
+  spec = spec || {};
+  const cx = spec.crownX != null ? spec.crownX : 0.5;
+  return {
+    pose: spec.pose || "standing",
+    crownX: cx,
+    crown: spec.crown != null ? spec.crown : 0.08,
+    browX: spec.browX != null ? spec.browX : cx,
+    brow: spec.brow != null ? spec.brow : 0.24,
+    feetX: spec.feetX != null ? spec.feetX : cx,
+    feetY: spec.feetY != null ? spec.feetY : 0.9,
+  };
+}
+
+function uvToLocal(u, v, width, height, y0, z) {
+  return new THREE.Vector3((u - 0.5) * width, y0 + (0.5 - v) * height, z);
+}
 
 function mat(name, opts) {
   if (!mats[name]) mats[name] = new THREE.MeshStandardMaterial(opts);
@@ -155,7 +263,9 @@ function shivling() {
   const crown = dummy(0, 1.16, 0);
   const brow = dummy(0, 0.92, 0.2);
   g.add(crown, brow);
-  g.userData.anchors = { crown, forehead: brow, chest: lingam, base: yoni };
+  const feet = dummy(0, 0.42, 0.28);
+  g.add(feet);
+  g.userData.anchors = { crown, forehead: brow, chest: lingam, hands: brow, feet, base: yoni };
   g.userData.coatMesh = lingam;
   g.userData.kind = "lingam";
   g.userData.deityId = "shivling";
@@ -378,7 +488,7 @@ function reliefGeometry(imgData, w, h, width, height) {
     const nx = (u - 0.5) * 2;
     const ny = (v - 0.42) * 2;
     const body = Math.max(0, 1 - (nx * nx * 0.9 + ny * ny * 1.15));
-    const z = a < 18 ? -0.02 : body * 0.07 + lum * 0.03;
+    const z = a < 18 ? -0.02 : body * 0.22 + lum * 0.1;
     pos.setZ(i, z);
   }
   geo.computeVertexNormals();
@@ -404,17 +514,23 @@ function densestColumn(data, w, h, y0, y1, x0, x1) {
   return bestX;
 }
 
+function faceSpec(spec) {
+  spec = spec || {};
+  return FACE_FRAC[spec.id] || FACE_FRAC.custom;
+}
+
 function detectHead(rows, imgData, w, h, spec) {
   spec = spec || {};
   const n = rows.length;
   if (n < 8) return null;
+  const fr = faceSpec(spec);
   const widths = rows.map((r) => r.maxX - r.minX + 1);
-  const topN = Math.max(6, Math.round(n * 0.1));
+  const topN = Math.max(6, Math.round(n * 0.08));
   const sample = widths.slice(0, topN).slice().sort((a, b) => a - b);
   const earlyMed = sample[sample.length >> 1] || widths[0];
-  let headEnd = Math.min(n - 1, Math.round(n * 0.32));
-  for (let i = topN; i < Math.min(n, Math.round(n * 0.55)); i++) {
-    if (widths[i] > earlyMed * 1.75) {
+  let headEnd = Math.min(n - 1, Math.round(n * 0.3));
+  for (let i = topN; i < Math.min(n, Math.round(n * 0.52)); i++) {
+    if (widths[i] > earlyMed * 1.7) {
       headEnd = Math.max(topN, i - 1);
       break;
     }
@@ -428,25 +544,26 @@ function detectHead(rows, imgData, w, h, spec) {
     maxX = Math.max(maxX, r.maxX);
   });
   const headW = maxX - minX + 1;
-  if (headW > earlyMed * 2.2) {
+  if (headW > earlyMed * 2.1) {
     if (prefer < 0.45) maxX = Math.min(maxX, Math.round(minX + headW * 0.52));
     else if (prefer > 0.55) minX = Math.max(minX, Math.round(minX + headW * 0.48));
     else {
       const c = (minX + maxX) / 2;
-      minX = Math.round(c - headW * 0.28);
-      maxX = Math.round(c + headW * 0.28);
+      minX = Math.round(c - headW * 0.26);
+      maxX = Math.round(c + headW * 0.26);
     }
   }
   const yTop = headRows[0].y;
   const yBot = headRows[headRows.length - 1].y;
   const headH = Math.max(8, yBot - yTop);
-  const crownY = yTop + headH * 0.07;
-  const browY = yTop + headH * 0.34;
-  const faceX0 = minX + (maxX - minX) * 0.28;
-  const faceX1 = minX + (maxX - minX) * 0.72;
+  const inset = fr.inset;
+  const faceX0 = minX + (maxX - minX) * inset;
+  const faceX1 = minX + (maxX - minX) * (1 - inset);
+  const crownY = yTop + headH * fr.crown;
+  const browY = yTop + headH * fr.brow;
   const data = imgData.data;
-  const crownX = densestColumn(data, w, h, yTop, yTop + headH * 0.16, faceX0, faceX1);
-  const browX = densestColumn(data, w, h, browY - headH * 0.06, browY + headH * 0.08, faceX0, faceX1);
+  const crownX = densestColumn(data, w, h, yTop, yTop + headH * 0.18, faceX0, faceX1);
+  const browX = densestColumn(data, w, h, browY - headH * 0.05, browY + headH * 0.08, faceX0, faceX1);
   return {
     crown: { x: crownX, y: crownY },
     brow: { x: browX, y: browY },
@@ -454,58 +571,63 @@ function detectHead(rows, imgData, w, h, spec) {
   };
 }
 
+function median(arr) {
+  if (!arr.length) return 0;
+  const a = arr.slice().sort((x, y) => x - y);
+  return a[a.length >> 1];
+}
+
 function pathsFromRows(rows, w, h, width, height, y0, spec, imgData) {
   spec = spec || {};
+  const B = bodyMap(spec);
   const toLocal = (px, py, z) => new THREE.Vector3(
     ((px / (w - 1)) - 0.5) * width,
     y0 + (0.5 - py / (h - 1)) * height,
     z,
   );
-  const head = imgData ? detectHead(rows, imgData, w, h, spec) : null;
-  const crownT = spec.crown != null ? spec.crown : 0.04;
-  const browT = spec.brow != null ? spec.brow : (BROW_T[spec.id] || BROW_T.custom);
-  const cx = spec.crownX != null ? spec.crownX : 0.5;
-  const start = Math.min(rows.length - 1, Math.max(0, Math.round(rows.length * (head ? (head.crown.y / Math.max(1, rows[rows.length - 1].y)) : crownT))));
+  const n = rows.length;
+  const midW = median(rows.slice((n * 0.35) | 0, (n * 0.55) | 0).map((r) => r.maxX - r.minX));
+  const lowW = median(rows.slice((n * 0.85) | 0).map((r) => r.maxX - r.minX));
+  const seated = B.pose === "seated" || B.pose === "recumbent" || lowW > midW * 1.12;
+  const startY = B.crown * (h - 1);
+  const start = Math.max(0, rows.findIndex((r) => r.y >= startY));
   const step = Math.max(1, ((rows.length - start) / 20) | 0);
   const left = [];
   const right = [];
   const center = [];
-  const faceMin = head ? head.head.minX : null;
-  const faceMax = head ? head.head.maxX : null;
+  const cxPx = B.crownX * (w - 1);
   for (let i = start; i < rows.length; i += step) {
     const r = rows[i];
-    const l = faceMin != null ? Math.max(r.minX, faceMin) : r.minX;
-    const rr = faceMax != null ? Math.min(r.maxX, faceMax) : r.maxX;
-    const mid = head && i < start + 8
-      ? head.brow.x
-      : (l + rr) * 0.5;
-    left.push(toLocal(l, r.y, 0.14));
-    right.push(toLocal(rr, r.y, 0.14));
-    center.push(toLocal(mid, r.y, 0.2));
+    left.push(toLocal(r.minX, r.y, 0.14));
+    right.push(toLocal(r.maxX, r.y, 0.14));
+    center.push(toLocal(cxPx, r.y, 0.2));
   }
   const last = rows[rows.length - 1];
   left.push(toLocal(last.minX, last.y, 0.1));
   right.push(toLocal(last.maxX, last.y, 0.1));
   center.push(toLocal(last.mid, last.y, 0.12));
-  const clampX = (row, frac) => Math.min(row.maxX, Math.max(row.minX, frac * (w - 1)));
-  const crownRow = rows[start];
-  const browRow = rows[Math.min(rows.length - 1, Math.max(start, Math.round(rows.length * browT)))];
-  const chestRow = rows[Math.min(rows.length - 1, Math.round(rows.length * 0.5))];
-  const crownPos = head
-    ? toLocal(head.crown.x, head.crown.y, 0.26)
-    : toLocal(clampX(crownRow, cx), crownRow.y, 0.22);
-  const browPos = head
-    ? toLocal(head.brow.x, head.brow.y, 0.28)
-    : toLocal(clampX(browRow, cx), browRow.y, 0.24);
+  const chestRow = rows[Math.min(n - 1, Math.round(n * 0.5))];
+  const handsRow = rows[Math.min(n - 1, Math.round(n * (seated ? 0.58 : 0.52)))];
+  const faceZ = 0.42;
   return {
     left,
     right,
     center,
-    crownPos,
-    browPos,
-    chestPos: toLocal(chestRow.mid, chestRow.y, 0.18),
+    crownPos: uvToLocal(B.crownX, B.crown, width, height, y0, faceZ),
+    browPos: uvToLocal(B.browX, B.brow, width, height, y0, faceZ + 0.02),
+    chestPos: toLocal(chestRow.mid, chestRow.y, 0.28),
+    handsPos: toLocal(handsRow.mid, handsRow.y, 0.3),
+    feetPos: uvToLocal(B.feetX, B.feetY, width, height, y0, 0.36),
     basePos: toLocal(last.mid, last.y, 0.08),
-    faceR: head ? Math.max(0.08, ((head.head.maxX - head.head.minX) / (w - 1)) * width * 0.35) : 0.16,
+    faceR: 0.12,
+    seated,
+    pose: B.pose,
+    pixel: {
+      crown: { x: B.crownX * (w - 1), y: B.crown * (h - 1) },
+      brow: { x: B.browX * (w - 1), y: B.brow * (h - 1) },
+      feetY: B.feetY * (h - 1),
+      feetX: B.feetX * (w - 1),
+    },
   };
 }
 
@@ -542,7 +664,7 @@ async function makeStatue(spec) {
   const height = 1.66;
   const width = Math.min(1.32, height * aspect);
   const y0 = 0.36 + height / 2;
-  const depth = 0.28;
+  const depth = 0.36;
 
   const rimGeo = makeRim(outline, punched.w, punched.h, width, height, y0, depth);
   if (rimGeo) {
@@ -593,28 +715,96 @@ async function makeStatue(spec) {
   let brow;
   let chest;
   let base;
+  let feet;
+  let hands;
   let paths = null;
+  let pixel = null;
   if (rows.length > 8) {
     const P = pathsFromRows(rows, punched.w, punched.h, width, height, y0, spec, punched.data);
     paths = { left: P.left, right: P.right, center: P.center };
     crown = dummy(P.crownPos.x, P.crownPos.y, P.crownPos.z);
     brow = dummy(P.browPos.x, P.browPos.y, P.browPos.z);
     chest = dummy(P.chestPos.x, P.chestPos.y, P.chestPos.z);
+    hands = dummy(P.handsPos.x, P.handsPos.y, P.handsPos.z);
+    feet = dummy(P.feetPos.x, P.feetPos.y, P.feetPos.z);
     base = dummy(P.basePos.x, P.basePos.y, P.basePos.z);
     g.userData.faceR = P.faceR;
+    pixel = P.pixel;
   } else {
     const uv = ANCHORS[spec.id] || ANCHORS.custom;
     crown = dummy((uv.crown[0] - 0.5) * width, y0 + (uv.crown[1] - 0.5) * height, 0.22);
     brow = dummy((uv.brow[0] - 0.5) * width, y0 + (uv.brow[1] - 0.5) * height, 0.24);
     chest = dummy(0, y0, 0.18);
+    hands = dummy(0, y0 - height * 0.08, 0.2);
+    feet = dummy(0, y0 - height * 0.38, 0.18);
     base = dummy(0, y0 - height * 0.38, 0.1);
   }
-  g.add(crown, brow, chest, base);
-  g.userData.anchors = { crown, forehead: brow, chest, base };
+  g.add(crown, brow, chest, hands, feet, base);
+  const debugOn = typeof location !== "undefined" && /(?:\?|&)debug=1/.test(location.search);
+  if (debugOn) {
+    const mark = (obj, color) => {
+      const s = new THREE.Mesh(
+        new THREE.SphereGeometry(0.035, 12, 10),
+        new THREE.MeshBasicMaterial({ color, depthTest: false, transparent: true, opacity: 0.92 }),
+      );
+      s.renderOrder = 20;
+      obj.add(s);
+    };
+    mark(crown, 0x3b9dff);
+    mark(brow, 0xff3b3b);
+    mark(feet, 0x3bff7a);
+  }
+
+  const wetC = document.createElement("canvas");
+  wetC.width = punched.w;
+  wetC.height = punched.h;
+  const wetCtx = wetC.getContext("2d");
+  const wetImg = wetCtx.createImageData(punched.w, punched.h);
+  const wetTex = new THREE.CanvasTexture(wetC);
+  wetTex.needsUpdate = true;
+  const wetMat = new THREE.ShaderMaterial({
+    uniforms: {
+      uWet: { value: wetTex },
+      uKind: { value: 0 },
+    },
+    vertexShader: WET_VERT,
+    fragmentShader: WET_FRAG,
+    transparent: true,
+    depthWrite: false,
+  });
+  wetMat.userData.localMat = true;
+  const wetMesh = new THREE.Mesh(geo, wetMat);
+  wetMesh.position.set(0, y0, depth * 0.5 + 0.008);
+  wetMesh.castShadow = false;
+  wetMesh.receiveShadow = false;
+  wetMesh.renderOrder = 2;
+  g.add(wetMesh);
+  const minX = new Int16Array(punched.h).fill(-1);
+  const maxX = new Int16Array(punched.h).fill(-1);
+  rows.forEach((r) => { minX[r.y] = r.minX; maxX[r.y] = r.maxX; });
+
+  g.userData.anchors = { crown, forehead: brow, chest, hands, feet, base };
   g.userData.paths = paths;
   g.userData.coatMesh = front;
   g.userData.kind = "statue";
   g.userData.deityId = spec.id;
+  g.userData.family = spec.family;
+  g.userData.wet = {
+    canvas: wetC,
+    ctx: wetCtx,
+    tex: wetTex,
+    imgData: wetImg,
+    w: punched.w,
+    h: punched.h,
+    alpha: punched.data,
+    minX,
+    maxX,
+  };
+  g.userData.pixel = pixel;
+  g.userData.pose = spec.pose || "standing";
+  g.userData.wetMat = wetMat;
+  g.userData.frontMat = matFront;
+  g.userData.backMat = matBack;
   return g;
 }
 
@@ -625,10 +815,40 @@ function worldOf(obj) {
 
 function makeKalash() {
   const g = new THREE.Group();
-  g.add(lathe([[0.02, 0], [0.085, 0.02], [0.1, 0.12], [0.055, 0.18], [0.035, 0.22]], mats.gold));
-  g.add(mesh(new THREE.TorusGeometry(0.04, 0.008, 6, 12), mats.gold, 0, 0.2, 0));
+  const body = lathe(
+    [[0.02, 0], [0.1, 0.03], [0.125, 0.16], [0.07, 0.26], [0.04, 0.32]],
+    mats.gold,
+  );
+  g.add(body);
+  g.add(mesh(new THREE.TorusGeometry(0.048, 0.01, 8, 16), mats.gold, 0, 0.3, 0));
+  const spout = lathe(
+    [[0.0, 0], [0.022, 0.0], [0.018, 0.09], [0.0, 0.1]],
+    mats.gold,
+  );
+  spout.rotation.z = 1.15;
+  spout.position.set(-0.09, 0.26, 0);
+  g.add(spout);
+  const lip = dummy(-0.16, 0.3, 0);
+  g.add(lip);
+  g.userData.spout = lip;
+  g.scale.setScalar(1.15);
   g.visible = false;
   return g;
+}
+
+function pourCurve(from, to, n) {
+  const mid = from.clone().lerp(to, 0.42);
+  mid.y = Math.max(to.y + 0.04, from.y - 0.02);
+  mid.z = (from.z + to.z) * 0.5 + 0.05;
+  const curve = new THREE.CatmullRomCurve3([from, mid, to]);
+  return curve.getPoints(n);
+}
+
+function spoutWorld() {
+  if (!kalash || !kalash.userData.spout) {
+    return kalash.position.clone().add(new THREE.Vector3(-0.12, 0.04, 0));
+  }
+  return worldOf(kalash.userData.spout);
 }
 
 function addCoat(kind) {
@@ -653,65 +873,88 @@ function addCoat(kind) {
   coats.push(coat);
 }
 
-function fluidMat(kind) {
+function makeWaterMaterial(kind) {
   const isMilk = kind === "milk";
   const isOil = kind === "oil";
-  const m = new THREE.MeshStandardMaterial({
-    color: isOil ? 0x6b4a1e : isMilk ? 0xf6f1e6 : 0x6eb8dc,
+  const color = isOil ? new THREE.Color(0x6b4a1e) : isMilk ? new THREE.Color(0xf3eee4) : new THREE.Color(0x9ecbe0);
+  const uniforms = {
+    uTime: { value: 0 },
+    uFill: { value: 0 },
+    uColor: { value: color },
+    uOpacity: { value: isOil ? 0.9 : isMilk ? 0.84 : 0.78 },
+  };
+  const mat = new THREE.ShaderMaterial({
+    uniforms,
+    vertexShader: WATER_VERT,
+    fragmentShader: WATER_FRAG,
     transparent: true,
-    opacity: isOil ? 0.82 : isMilk ? 0.86 : 0.58,
-    roughness: isMilk ? 0.24 : 0.06,
-    metalness: 0.04,
     depthWrite: false,
+    side: THREE.DoubleSide,
   });
-  m.userData.localMat = true;
-  return m;
+  mat.userData.localMat = true;
+  return { mat, uniforms };
 }
 
-function rebuildTube(mesh, pts, radius) {
-  if (!pts || pts.length < 2) return;
-  const curve = new THREE.CatmullRomCurve3(pts);
-  const segs = Math.max(10, Math.min(64, pts.length * 4));
-  const geo = new THREE.TubeGeometry(curve, segs, radius, 10, false);
+function ribbonGeometry(points, width) {
+  const n = points.length;
+  const positions = new Float32Array(n * 2 * 3);
+  const uvs = new Float32Array(n * 2 * 2);
+  const idx = [];
+  for (let i = 0; i < n; i++) {
+    const p = points[i];
+    const nxt = points[Math.min(n - 1, i + 1)];
+    const prv = points[Math.max(0, i - 1)];
+    _dir.copy(nxt).sub(prv);
+    if (_dir.lengthSq() < 1e-8) _dir.set(0, -1, 0);
+    _side.set(-_dir.z, 0, _dir.x);
+    if (_side.lengthSq() < 1e-6) _side.set(1, 0, 0);
+    _side.normalize().multiplyScalar(width * 0.5);
+    const o = i * 6;
+    positions[o] = p.x - _side.x; positions[o + 1] = p.y; positions[o + 2] = p.z - _side.z;
+    positions[o + 3] = p.x + _side.x; positions[o + 4] = p.y; positions[o + 5] = p.z + _side.z;
+    const v = n === 1 ? 0 : i / (n - 1);
+    const uo = i * 4;
+    uvs[uo] = v; uvs[uo + 1] = 0;
+    uvs[uo + 2] = v; uvs[uo + 3] = 1;
+  }
+  for (let i = 0; i < n - 1; i++) {
+    const a = i * 2; const b = a + 1; const c = a + 2; const d = a + 3;
+    idx.push(a, b, c, b, d, c);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geo.setAttribute("uv", new THREE.BufferAttribute(uvs, 2));
+  geo.setIndex(idx);
+  geo.computeVertexNormals();
   geo.userData.localGeo = true;
-  const old = mesh.geometry;
-  mesh.geometry = geo;
-  if (old && old !== tubeGeoDummy) old.dispose();
+  return geo;
 }
 
-function addStream(pts, radius, kind, growSpeed, life) {
+function addRibbon(pts, width, kind, fillSpeed, life) {
   if (!pts || pts.length < 2) return;
-  if (!tubeGeoDummy) tubeGeoDummy = new THREE.SphereGeometry(0.001, 3, 3);
-  const mat = fluidMat(kind);
-  const mesh = new THREE.Mesh(tubeGeoDummy, mat);
+  const { mat, uniforms } = makeWaterMaterial(kind);
+  const mesh = new THREE.Mesh(ribbonGeometry(pts, width), mat);
   mesh.castShadow = false;
-  mesh.receiveShadow = false;
-  rebuildTube(mesh, pts.slice(0, 2), radius);
+  mesh.frustumCulled = false;
   fxRoot.add(mesh);
   streams.push({
     mesh,
-    pts,
-    radius,
-    grown: 0.08,
-    growSpeed: growSpeed || 1.6,
-    life: life || 2.1,
-    fadeAfter: (life || 2.1) * 0.55,
-    baseOpacity: mat.opacity,
+    uniforms,
+    fill: 0,
+    fillSpeed: fillSpeed || 2.4,
+    life: life || 1.7,
+    baseOpacity: uniforms.uOpacity.value,
     kind,
   });
 }
 
 function arcPoints(from, to, n) {
   const pts = [];
-  const mid = from.clone().lerp(to, 0.5);
-  mid.y = Math.max(to.y, from.y) + 0.04;
-  mid.z = (from.z + to.z) * 0.5 + 0.04;
   for (let i = 0; i <= n; i++) {
     const t = i / n;
-    const a = from.clone().lerp(mid, t);
-    const b = mid.clone().lerp(to, t);
-    const p = a.lerp(b, t);
-    p.y -= 4 * t * (1 - t) * 0.02;
+    const p = from.clone().lerp(to, t);
+    p.y += Math.sin(t * Math.PI) * 0.03 - 4 * t * (1 - t) * 0.05;
+    p.z += Math.sin(t * Math.PI) * 0.02;
     pts.push(p);
   }
   return pts;
@@ -720,70 +963,113 @@ function arcPoints(from, to, n) {
 function dropMesh(matRef, size) {
   if (!dropGeo) dropGeo = new THREE.SphereGeometry(1, 10, 10);
   const d = new THREE.Mesh(dropGeo, matRef);
-  d.scale.set(size * 0.85, size * 1.15, size * 0.85);
+  d.scale.set(size * 0.7, size * 1.05, size * 0.7);
   d.castShadow = false;
   d.receiveShadow = false;
   return d;
 }
 
-function pour(kind) {
-  if (!current) return;
-  const top = worldOf(current.userData.anchors.crown);
-  const brow = worldOf(current.userData.anchors.forehead);
-  const chest = worldOf(current.userData.anchors.chest);
-  const base = worldOf(current.userData.anchors.base);
-  const hold = top.clone().add(new THREE.Vector3(0.22, 0.34, 0.28));
-  const spout = hold.clone().add(new THREE.Vector3(-0.02, -0.04, 0.01));
-  kalash.position.copy(hold);
-  kalash.rotation.set(0.1, 0.2, -0.18);
-  kalash.visible = true;
-  kalashAnim = { t: 0, hold };
-  const coatKind = kind === "oil" ? "milk" : kind;
-  addCoat(coatKind);
-  if (milkPool && kind === "milk") milkPool.material.opacity = 0.72;
-  else if (milkPool && kind === "water") {
-    milkPool.material.color = mats.water.color;
-    milkPool.material.opacity = 0.45;
+function clearWet() {
+  if (!current || !current.userData.wet) return;
+  const W = current.userData.wet;
+  W.imgData.data.fill(0);
+  W.ctx.putImageData(W.imgData, 0, 0);
+  W.tex.needsUpdate = true;
+}
+
+function beginWet(kind) {
+  if (!current || !current.userData.wet || !current.userData.pixel) return;
+  const px = current.userData.pixel;
+  if (current.userData.wetMat && current.userData.wetMat.uniforms) {
+    current.userData.wetMat.uniforms.uKind.value = kind === "milk" ? 1 : kind === "oil" ? 0.65 : 0;
   }
+  wetSim = {
+    kind,
+    t: 0,
+    dur: 2.1,
+    x: px.crown.x,
+    y0: px.crown.y,
+    prev: px.crown.y,
+    wobble: (Math.random() - 0.5) * 8,
+  };
+}
+
+function stepWet(dt) {
+  if (!wetSim || !current || !current.userData.wet) return;
+  const W = current.userData.wet;
+  wetSim.t += dt;
+  const u = Math.min(1, wetSim.t / wetSim.dur);
+  const eased = u * u * (3 - 2 * u);
+  const front = wetSim.y0 + (W.h - 1 - wetSim.y0) * eased;
+  const buf = W.imgData.data;
+  const alpha = W.alpha.data;
+  const yStart = Math.max(0, wetSim.prev | 0);
+  const yEnd = Math.min(W.h - 1, front | 0);
+  const cx0 = wetSim.x;
+  for (let y = yStart; y <= yEnd; y++) {
+    const minX = W.minX[y];
+    const maxX = W.maxX[y];
+    if (minX < 0) continue;
+    const mid = (minX + maxX) * 0.5;
+    const drift = Math.sin((y - wetSim.y0) * 0.035 + wetSim.wobble) * 7;
+    const c1 = Math.min(maxX - 2, Math.max(minX + 2, cx0 + drift));
+    const c2 = mid * 0.35 + c1 * 0.65;
+    const c3 = minX * 0.25 + mid * 0.75 + drift * 0.4;
+    const xs = [c1, c2, c3];
+    const sig = [28, 70, 18];
+    const travel = (y - wetSim.y0) / Math.max(1, W.h - wetSim.y0);
+    for (let x = minX; x <= maxX; x++) {
+      const i = (y * W.w + x) * 4;
+      if (alpha[i + 3] < 40) continue;
+      let inf = 0;
+      let core = 0;
+      for (let k = 0; k < 3; k++) {
+        const d = x - xs[k];
+        const g = Math.exp(-(d * d) / (2 * sig[k]));
+        inf = Math.max(inf, g);
+        if (k === 0) core = g;
+      }
+      if (inf < 0.05) continue;
+      const fade = 0.7 + 0.3 * (1 - travel);
+      const add = inf * fade * 90;
+      const hi = Math.min(255, 70 + core * 185);
+      buf[i] = Math.max(buf[i], hi);
+      buf[i + 1] = Math.max(buf[i + 1], hi * 0.92);
+      buf[i + 2] = Math.max(buf[i + 2], hi * 0.88);
+      buf[i + 3] = Math.min(210, buf[i + 3] + add);
+    }
+  }
+  wetSim.prev = front;
+  W.ctx.putImageData(W.imgData, 0, 0);
+  W.tex.needsUpdate = true;
+  if (current.userData.puddle) {
+    const reach = Math.max(0, (u - 0.55) / 0.45);
+    current.userData.puddle.material.opacity = 0.38 * reach;
+  }
+  if (u >= 1) wetSim = null;
+}
+
+function spawnSplash(top, kind) {
   const isMilk = kind === "milk";
   const isOil = kind === "oil";
-  const radius = isMilk || isOil ? 0.011 : 0.0075;
-  const pourArc = arcPoints(spout, top, 10);
-  addStream(pourArc, radius, kind, 3.4, 1.85);
-
-  const localPaths = current.userData.paths;
-  const worldPath = (arr) => arr.map((p) => current.localToWorld(p.clone()));
-  const rivulets = [];
-  if (current.userData.kind === "lingam") {
-    const helixPts = [];
-    for (let i = 0; i < 18; i++) {
-      const t = i / 17;
-      const a = t * Math.PI * 2.2;
-      helixPts.push(new THREE.Vector3(Math.cos(a) * (0.08 + t * 0.12), top.y - t * 0.62, Math.sin(a) * (0.08 + t * 0.1)));
-    }
-    rivulets.push(helixPts);
-  } else if (localPaths) {
-    rivulets.push(worldPath(localPaths.center));
-    rivulets.push(worldPath(localPaths.left));
-    rivulets.push(worldPath(localPaths.right));
-  } else {
-    rivulets.push([top.clone(), brow.clone(), chest.clone(), base.clone()]);
-  }
-  rivulets.forEach((pts, i) => {
-    const r = i === 0 ? radius * 0.85 : radius * 0.55;
-    addStream(pts, r, kind, 1.15 + i * 0.15, 2.4);
-  });
-
-  const splashMat = fluidMat(kind);
   const splashN = reduced ? 6 : 12;
+  const splashMat = new THREE.MeshStandardMaterial({
+    color: isOil ? 0x6b4a1e : isMilk ? 0xf6f1e6 : 0xcfe8f4,
+    transparent: true,
+    opacity: 0.7,
+    roughness: 0.06,
+    metalness: 0.05,
+    depthWrite: false,
+  });
+  splashMat.userData.localMat = true;
   for (let i = 0; i < splashN; i++) {
-    const d = dropMesh(splashMat, isMilk || isOil ? 0.016 : 0.012);
+    const d = dropMesh(splashMat, isMilk || isOil ? 0.011 : 0.0075);
     d.position.copy(top);
     d.userData = {
-      vx: (Math.random() - 0.5) * 0.18,
-      vy: 0.12 + Math.random() * 0.1,
-      vz: (Math.random() - 0.5) * 0.12,
-      life: 0.45 + Math.random() * 0.25,
+      vx: (Math.random() - 0.5) * 0.16,
+      vy: 0.08 + Math.random() * 0.1,
+      vz: 0.02 + Math.random() * 0.1,
+      life: 0.38 + Math.random() * 0.22,
       splash: true,
     };
     fxRoot.add(d);
@@ -791,39 +1077,93 @@ function pour(kind) {
   }
 }
 
+function ensurePuddle() {
+  if (!current) return null;
+  if (current.userData.puddle) return current.userData.puddle;
+  const p = mesh(new THREE.CircleGeometry(0.2, 28), (mats.water).clone(), 0, 0.332, 0.14);
+  p.rotation.x = -Math.PI / 2;
+  p.material.transparent = true;
+  p.material.opacity = 0;
+  p.material.roughness = 0.05;
+  p.material.metalness = 0.08;
+  p.castShadow = false;
+  current.add(p);
+  current.userData.puddle = p;
+  return p;
+}
+
+function pour(kind) {
+  if (!current) return;
+  const top = worldOf(current.userData.anchors.crown);
+  const hold = top.clone().add(new THREE.Vector3(0.28, 0.34, 0.22));
+  kalash.position.copy(hold);
+  kalash.rotation.set(0.12, 0.1, -0.08);
+  kalash.visible = true;
+  kalashAnim = { t: 0, hold, kind, top, started: false };
+  if (milkPool && kind === "milk") milkPool.material.opacity = 0.72;
+  else if (milkPool && kind === "water") {
+    milkPool.material.color = mats.water.color;
+    milkPool.material.opacity = 0.45;
+  }
+  ensurePuddle();
+}
+
+function arghya() {
+  if (!current) return;
+  const hands = worldOf(current.userData.anchors.hands || current.userData.anchors.chest);
+  const from = hands.clone().add(new THREE.Vector3(0, 0.04, 0.22));
+  const to = hands.clone().add(new THREE.Vector3(0, 0.42, 0.85));
+  kalash.position.copy(from.clone().add(new THREE.Vector3(0.12, 0.08, 0.04)));
+  kalash.rotation.set(0.2, 0, -0.9);
+  kalash.visible = true;
+  kalashAnim = { t: 0, hold: kalash.position.clone() };
+  addRibbon(arcPoints(from, to, 14), 0.014, "water", 2.8, 1.6);
+}
+
 function stepKalash(dt) {
   if (!kalashAnim || !kalash) return;
   kalashAnim.t += dt;
   const t = kalashAnim.t;
-  if (t < 0.28) kalash.rotation.z = -0.18 - 0.85 * (t / 0.28);
-  else if (t < 1.45) kalash.rotation.z = -1.03;
-  else if (t < 1.95) kalash.rotation.z = -1.03 + 0.85 * ((t - 1.45) / 0.5);
+  if (t < 0.32) kalash.rotation.z = -0.08 - 1.05 * (t / 0.32);
+  else if (t < 1.55) kalash.rotation.z = -1.13;
+  else if (t < 2.05) kalash.rotation.z = -1.13 + 1.05 * ((t - 1.55) / 0.5);
   else {
     kalash.visible = false;
     kalashAnim = null;
+    return;
+  }
+  if (!kalashAnim.started && t >= 0.26) {
+    kalashAnim.started = true;
+    const kind = kalashAnim.kind;
+    const isMilk = kind === "milk";
+    const isOil = kind === "oil";
+    const width = isMilk || isOil ? 0.016 : 0.009;
+    const from = spoutWorld();
+    addRibbon(pourCurve(from, kalashAnim.top, 22), width, kind, 3.2, 1.7);
+    beginWet(kind);
+    spawnSplash(kalashAnim.top, kind);
   }
 }
 
 function stepStreams(dt) {
   for (let i = streams.length - 1; i >= 0; i--) {
     const s = streams[i];
-    s.grown = Math.min(1, s.grown + s.growSpeed * dt);
+    s.fill = Math.min(1, s.fill + s.fillSpeed * dt);
     s.life -= dt;
-    const count = Math.max(2, Math.ceil(2 + (s.pts.length - 2) * s.grown));
-    const pts = s.pts.slice(0, count);
-    const fade = s.life < 0.55 ? Math.max(0, s.life / 0.55) : 1;
-    s.mesh.material.opacity = s.baseOpacity * fade;
-    if (s.grown < 1 || fade < 1) rebuildTube(s.mesh, pts, s.radius * (0.75 + 0.25 * fade));
+    s.uniforms.uFill.value = s.fill;
+    s.uniforms.uTime.value = clockT;
+    const fade = s.life < 0.45 ? Math.max(0, s.life / 0.45) : 1;
+    s.uniforms.uOpacity.value = s.baseOpacity * fade;
     if (s.life <= 0) {
       fxRoot.remove(s.mesh);
-      if (s.mesh.geometry && s.mesh.geometry !== tubeGeoDummy) s.mesh.geometry.dispose();
+      if (s.mesh.geometry) s.mesh.geometry.dispose();
       if (s.mesh.material && s.mesh.material.userData.localMat) s.mesh.material.dispose();
       streams.splice(i, 1);
     }
   }
 }
 
-function mark(kind) {
+function stampMark(kind) {
   if (!current) return;
   const brow = current.userData.anchors.forehead;
   if (current.userData.kind === "lingam") {
@@ -844,31 +1184,110 @@ function mark(kind) {
     }
     return;
   }
+  if (kind === "tilak" && (current.userData.family === "shiva" || current.userData.deityId === "shivling")) {
+    [-0.016, 0, 0.016].forEach((dy) => {
+      const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.08, 0.011), mats.bhasma);
+      stripe.position.set(0, dy, 0.012);
+      brow.add(stripe);
+      marks.push(stripe);
+    });
+    const bindu = new THREE.Mesh(new THREE.CircleGeometry(0.01, 12), mats.kumkum);
+    bindu.position.set(0, 0, 0.014);
+    brow.add(bindu);
+    marks.push(bindu);
+    return;
+  }
+  const w = kind === "chandan" ? 0.055 : 0.028;
+  const h = kind === "chandan" ? 0.038 : 0.028;
   const m = new THREE.Mesh(
-    new THREE.CircleGeometry(kind === "chandan" ? 0.035 : 0.026, 16),
+    new THREE.CircleGeometry(kind === "chandan" ? 0.028 : 0.016, 18),
     kind === "chandan" ? mats.chandan : mats.kumkum,
   );
-  m.position.set(0, 0, 0.02);
+  m.scale.set(1.35, 1, 1);
+  m.position.set(0, 0, 0.014);
   brow.add(m);
   marks.push(m);
 }
 
+function mark(kind) {
+  if (!current) return;
+  const brow = worldOf(current.userData.anchors.forehead);
+  const blob = new THREE.Mesh(
+    new THREE.SphereGeometry(kind === "chandan" ? 0.018 : 0.012, 12, 10),
+    kind === "chandan" ? mats.chandan : mats.kumkum,
+  );
+  blob.position.copy(brow.clone().add(new THREE.Vector3(0.22, 0.08, 0.28)));
+  fxRoot.add(blob);
+  applicator = {
+    mesh: blob,
+    from: blob.position.clone(),
+    to: brow.clone().add(new THREE.Vector3(0, 0, 0.02)),
+    t: 0,
+    dur: 0.55,
+    kind,
+    stamped: false,
+  };
+}
+
+function stepApplicator(dt) {
+  if (!applicator) return;
+  applicator.t += dt;
+  const u = Math.min(1, applicator.t / applicator.dur);
+  const e = 1 - Math.pow(1 - u, 3);
+  applicator.mesh.position.lerpVectors(applicator.from, applicator.to, e);
+  applicator.mesh.scale.setScalar(1 - e * 0.35);
+  if (u >= 1 && !applicator.stamped) {
+    applicator.stamped = true;
+    stampMark(applicator.kind);
+  }
+  if (u >= 1) {
+    fxRoot.remove(applicator.mesh);
+    applicator = null;
+  }
+}
+
+function leafMesh(kind) {
+  const isGrass = kind === "durva";
+  const isTulsi = kind === "tulsi";
+  const geo = isGrass
+    ? new THREE.PlaneGeometry(0.018, 0.09)
+    : new THREE.CircleGeometry(isTulsi ? 0.028 : 0.04, 5);
+  const mat = (isTulsi ? mats.leaf : mats.leaf).clone();
+  if (isTulsi) mat.color = new THREE.Color(0x3d8b5a);
+  if (kind === "bilva") mat.color = new THREE.Color(0x6a9a4a);
+  const p = new THREE.Mesh(geo, mat);
+  p.castShadow = false;
+  if (isGrass) p.rotation.z = (Math.random() - 0.5) * 0.6;
+  return p;
+}
+
 function shower(kind) {
   if (!current) return;
-  const top = worldOf(current.userData.anchors.crown);
-  const n = reduced ? 10 : 18;
-  const isLeaf = kind === "bilva";
-  const spread = Math.min(0.16, (current.userData.faceR || 0.14) * 1.1);
+  const atFeet = kind === "tulsi";
+  const host = atFeet
+    ? (current.userData.anchors.feet || current.userData.anchors.base)
+    : current.userData.anchors.crown;
+  const top = worldOf(host);
+  const n = reduced ? 8 : (kind === "tulsi" ? 16 : 16);
+  const isLeaf = kind === "bilva" || kind === "durva" || kind === "tulsi";
+  const spread = atFeet
+    ? 0.1
+    : Math.min(0.13, (current.userData.faceR || 0.14) * 1.05);
   for (let i = 0; i < n; i++) {
-    const p = mesh(
-      isLeaf ? new THREE.CircleGeometry(0.045, 5) : new THREE.SphereGeometry(0.035, 8, 6),
-      isLeaf ? mats.leaf : mats.petal,
-    );
+    const p = isLeaf
+      ? leafMesh(kind)
+      : mesh(new THREE.SphereGeometry(0.032, 8, 6), mats.petal);
     if (!isLeaf) p.scale.set(0.7, 0.22, 1.1);
-    p.position.set(top.x + (Math.random() - 0.5) * 0.35, 2.05 + Math.random() * 0.25, top.z + 0.12 + Math.random() * 0.16);
+    const ox = (Math.random() - 0.5) * spread;
+    const oz = 0.03 + (Math.random() - 0.5) * spread * 0.45;
+    p.position.set(
+      top.x + ox * 1.4,
+      top.y + (atFeet ? 0.38 : 0.55) + Math.random() * 0.12,
+      top.z + 0.1 + Math.random() * 0.08,
+    );
     p.userData = {
-      vy: 0,
-      target: top.clone().add(new THREE.Vector3((Math.random() - 0.5) * spread, 0.02, (Math.random() - 0.5) * spread * 0.6)),
+      vy: atFeet ? -0.05 : 0,
+      target: top.clone().add(new THREE.Vector3(ox, atFeet ? 0.015 : 0.02, oz)),
     };
     fxRoot.add(p);
     petals.push(p);
@@ -1120,24 +1539,148 @@ function stepCoats(dt) {
   }
 }
 
+function stepReveal(dt) {
+  if (!revealAnim || !camera) return;
+  revealAnim.t += dt;
+  const u = Math.min(1, revealAnim.t / revealAnim.dur);
+  const e = 1 - Math.pow(1 - u, 3);
+  camera.position.lerpVectors(revealAnim.from, revealAnim.to, e);
+  controls.target.copy(revealAnim.target);
+  camera.lookAt(revealAnim.target);
+  if (sunLight) sunLight.intensity = 0.08 + 1.17 * e;
+  if (hemLight) hemLight.intensity = 0.12 + 0.78 * e;
+  if (fillLight) fillLight.intensity = 0.06 + 0.32 * e;
+  if (auraLight) auraLight.intensity = e < 0.55 ? e * 3.2 : 1.76 - (e - 0.55) * 1.4;
+  statueMats.forEach((m) => {
+    if (!m) return;
+    if (m.opacity != null && m.transparent) m.opacity = Math.min(1, 0.12 + e * 0.95);
+    if (m.emissiveIntensity != null) m.emissiveIntensity = 0.7 * (1 - e);
+  });
+  if (motes && motes.material) {
+    motes.material.opacity = e < 0.7 ? e * 0.85 : 0.6 * (1 - (e - 0.7) / 0.3);
+  }
+  if (u >= 1) {
+    statueMats.forEach((m) => {
+      if (!m) return;
+      if (m.opacity != null) m.opacity = 1;
+      if (m.emissiveIntensity != null) m.emissiveIntensity = 0.04;
+    });
+    if (controls) {
+      controls.enabled = true;
+      controls.enableRotate = true;
+    }
+    revealAnim = null;
+  }
+}
+
+function spawnMotes() {
+  if (motes) {
+    fxRoot.remove(motes);
+    if (motes.geometry) motes.geometry.dispose();
+    motes = null;
+  }
+  if (reduced) return;
+  const n = 64;
+  const pos = new Float32Array(n * 3);
+  const vel = [];
+  for (let i = 0; i < n; i++) {
+    pos[i * 3] = (Math.random() - 0.5) * 1.5;
+    pos[i * 3 + 1] = 0.35 + Math.random() * 1.7;
+    pos[i * 3 + 2] = 0.15 + Math.random() * 0.7;
+    vel.push(0.035 + Math.random() * 0.07);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  geo.userData.localGeo = true;
+  const mat = new THREE.PointsMaterial({
+    color: 0xffe2a8,
+    size: 0.016,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+    sizeAttenuation: true,
+  });
+  mat.userData.localMat = true;
+  motes = new THREE.Points(geo, mat);
+  motes.userData.vel = vel;
+  fxRoot.add(motes);
+}
+
+function stepMotes(dt) {
+  if (!motes) return;
+  const pos = motes.geometry.attributes.position;
+  const vel = motes.userData.vel;
+  for (let i = 0; i < pos.count; i++) {
+    let y = pos.getY(i) + vel[i] * dt;
+    if (y > 2.15) y = 0.4;
+    pos.setY(i, y);
+  }
+  pos.needsUpdate = true;
+  if (!revealAnim && motes.material.opacity > 0) {
+    motes.material.opacity = Math.max(0, motes.material.opacity - dt * 0.18);
+    if (motes.material.opacity <= 0) {
+      fxRoot.remove(motes);
+      motes.geometry.dispose();
+      motes = null;
+    }
+  }
+}
+
+function prepareManifest(lingam) {
+  statueMats = [];
+  if (!current) return;
+  current.scale.setScalar(1);
+  current.position.y = 0;
+  current.rotation.set(0, 0, 0);
+  const front = current.userData.frontMat;
+  const back = current.userData.backMat;
+  [front, back].forEach((m) => {
+    if (!m) return;
+    m.transparent = true;
+    m.opacity = 0.08;
+    m.emissive = new THREE.Color(0xc49a4a);
+    m.emissiveIntensity = 0.7;
+    statueMats.push(m);
+  });
+  if (!auraLight) {
+    auraLight = new THREE.PointLight(0xffc878, 0, 3.6);
+    scene.add(auraLight);
+  }
+  auraLight.position.set(0, lingam ? 0.9 : 1.25, 0.45);
+  auraLight.intensity = 0;
+  spawnMotes();
+}
+
 function loop(t) {
   if (!running) return;
   const dt = Math.min(0.05, (t - lastT) / 1000 || 0.016);
   lastT = t;
+  clockT = t * 0.001;
+  stepReveal(dt);
+  stepMotes(dt);
   stepDrops(dt);
   stepKalash(dt);
   stepStreams(dt);
+  stepWet(dt);
+  stepApplicator(dt);
   stepPetals(dt);
   stepSmoke(dt);
   stepAarti(dt);
   stepCoats(dt);
+  if (current && current.userData.frontMat && !revealAnim) {
+    const m = current.userData.frontMat;
+    if (m.emissiveIntensity != null) {
+      m.emissiveIntensity = 0.035 + Math.sin(clockT * 1.4) * 0.02;
+    }
+  }
   if (sanctumRoot && sanctumRoot.userData.flames) {
     sanctumRoot.userData.flames.forEach((f, i) => {
       const flick = 1 + Math.sin(t * 0.012 + i * 1.7) * 0.12 + Math.sin(t * 0.031 + i) * 0.07;
       if (f.scale) f.scale.set(0.09 * flick, 0.16 * flick, 1);
     });
   }
-  if (controls) controls.update();
+  if (controls && !revealAnim) controls.update();
   renderer.render(scene, camera);
 }
 
@@ -1157,6 +1700,18 @@ function clearFx() {
   if (kalash) kalash.visible = false;
   kalashAnim = null;
   milkPool = null;
+  wetSim = null;
+  if (applicator) {
+    fxRoot.remove(applicator.mesh);
+    applicator = null;
+  }
+  if (motes) {
+    fxRoot.remove(motes);
+    if (motes.geometry) motes.geometry.dispose();
+    motes = null;
+  }
+  statueMats = [];
+  clearWet();
 }
 
 function buildSanctum() {
@@ -1191,27 +1746,43 @@ function buildSanctum() {
   return g;
 }
 
-function frameStatue(lingam) {
-  if (!controls || !camera) return;
-  const damp = controls.enableDamping;
-  controls.enableDamping = false;
-  controls.autoRotate = false;
-  controls.autoRotateSpeed = 0;
-  if (lingam) {
-    controls.minAzimuthAngle = -Infinity;
-    controls.maxAzimuthAngle = Infinity;
-    controls.target.set(0, 0.78, 0);
-    camera.position.set(0, 1.18, 2.35);
-  } else {
-    controls.minAzimuthAngle = -1.05;
-    controls.maxAzimuthAngle = 1.05;
-    controls.target.set(0, 1.18, 0);
-    camera.position.set(0, 1.26, 2.62);
-  }
+function startReveal(lingam) {
+  const end = lingam
+    ? { pos: new THREE.Vector3(0, 1.14, 2.28), target: new THREE.Vector3(0, 0.78, 0) }
+    : { pos: new THREE.Vector3(0, 1.16, 2.42), target: new THREE.Vector3(0, 1.08, 0) };
+  const from = end.pos.clone().add(new THREE.Vector3(0, 0.1, 1.65));
+  camera.position.copy(from);
   camera.up.set(0, 1, 0);
-  camera.lookAt(controls.target);
-  controls.update();
-  controls.enableDamping = damp;
+  controls.target.copy(end.target);
+  camera.lookAt(end.target);
+  controls.autoRotate = false;
+  controls.enableRotate = false;
+  controls.minAzimuthAngle = -0.16;
+  controls.maxAzimuthAngle = 0.16;
+  controls.minPolarAngle = Math.PI * 0.42;
+  controls.maxPolarAngle = Math.PI * 0.5;
+  controls.enabled = false;
+  if (sunLight) sunLight.intensity = 0.08;
+  if (hemLight) hemLight.intensity = 0.12;
+  if (fillLight) fillLight.intensity = 0.06;
+  prepareManifest(lingam);
+  revealAnim = reduced
+    ? null
+    : { t: 0, dur: 2.35, from, to: end.pos, target: end.target };
+  if (!revealAnim) {
+    camera.position.copy(end.pos);
+    statueMats.forEach((m) => {
+      if (!m) return;
+      if (m.opacity != null) m.opacity = 1;
+      if (m.emissiveIntensity != null) m.emissiveIntensity = 0.04;
+    });
+    controls.enabled = true;
+    controls.enableRotate = true;
+  }
+}
+
+function frameStatue(lingam) {
+  startReveal(!!lingam);
 }
 
 export function mountMurti(canvas) {
@@ -1238,21 +1809,25 @@ export function mountMurti(canvas) {
   scene.environment = pmrem.fromScene(envScene, 0.02).texture;
   pmrem.dispose();
 
-  scene.add(new THREE.HemisphereLight(0xfff1e0, 0x8a6a50, 0.9));
-  const sun = new THREE.DirectionalLight(0xffe4b8, 1.25);
-  sun.position.set(1.6, 4.2, 3.2);
-  sun.castShadow = true;
-  sun.shadow.mapSize.set(1024, 1024);
-  sun.shadow.camera.near = 0.5;
-  sun.shadow.camera.far = 14;
-  sun.shadow.camera.left = -3;
-  sun.shadow.camera.right = 3;
-  sun.shadow.camera.top = 3;
-  sun.shadow.camera.bottom = -3;
-  scene.add(sun);
-  const fill = new THREE.DirectionalLight(0xffd8b0, 0.35);
-  fill.position.set(-2, 1.8, 1.2);
-  scene.add(fill);
+  hemLight = new THREE.HemisphereLight(0xfff1e0, 0x8a6a50, 0.9);
+  scene.add(hemLight);
+  sunLight = new THREE.DirectionalLight(0xffe4b8, 1.25);
+  sunLight.position.set(1.6, 4.2, 3.2);
+  sunLight.castShadow = true;
+  sunLight.shadow.mapSize.set(1024, 1024);
+  sunLight.shadow.camera.near = 0.5;
+  sunLight.shadow.camera.far = 14;
+  sunLight.shadow.camera.left = -3;
+  sunLight.shadow.camera.right = 3;
+  sunLight.shadow.camera.top = 3;
+  sunLight.shadow.camera.bottom = -3;
+  scene.add(sunLight);
+  fillLight = new THREE.DirectionalLight(0xffd8b0, 0.35);
+  fillLight.position.set(-2, 1.8, 1.2);
+  scene.add(fillLight);
+  const rim = new THREE.DirectionalLight(0xffc8a0, 0.28);
+  rim.position.set(0.2, 1.6, -2.4);
+  scene.add(rim);
 
   const floor = mesh(new THREE.CircleGeometry(4.8, 48), mats.marble, 0, 0, 0);
   floor.rotation.x = -Math.PI / 2;
@@ -1279,11 +1854,16 @@ export function mountMurti(canvas) {
   controls.enablePan = false;
   controls.minDistance = 1.7;
   controls.maxDistance = 4.2;
-  controls.minPolarAngle = Math.PI * 0.32;
-  controls.maxPolarAngle = Math.PI * 0.5;
-  controls.target.set(0, 1.18, 0);
+  controls.minPolarAngle = Math.PI * 0.38;
+  controls.maxPolarAngle = Math.PI * 0.48;
+  controls.rotateSpeed = 0.16;
+  controls.dampingFactor = 0.16;
+  controls.target.set(0, 1.08, 0);
   controls.autoRotate = false;
   controls.autoRotateSpeed = 0;
+  controls.enableRotate = true;
+  controls.minAzimuthAngle = -0.16;
+  controls.maxAzimuthAngle = 0.16;
 
   loadProps();
   resize();
@@ -1320,13 +1900,39 @@ export async function showDeity(spec) {
   current = next;
   root.add(current);
   frameStatue(lingam);
+  if (typeof window !== "undefined") {
+    window.__murtiQA = {
+      play: (k) => playOffer(k),
+      id: spec.id,
+      pose: next.userData.pose,
+      anchors() {
+        if (!current) return null;
+        const a = current.userData.anchors;
+        const w = (o) => {
+          if (!o) return null;
+          const v = worldOf(o);
+          return { x: +v.x.toFixed(3), y: +v.y.toFixed(3), z: +v.z.toFixed(3) };
+        };
+        return {
+          id: current.userData.deityId,
+          pose: current.userData.pose,
+          crown: w(a.crown),
+          brow: w(a.forehead),
+          feet: w(a.feet),
+        };
+      },
+    };
+  }
 }
 
 export function playOffer(kind) {
   if (kind === "water" || kind === "milk" || kind === "oil") pour(kind);
+  else if (kind === "arghya") arghya();
   else if (kind === "tilak" || kind === "chandan") mark(kind);
   else if (kind === "flowers") shower("flowers");
   else if (kind === "bilva") shower("bilva");
+  else if (kind === "durva") shower("durva");
+  else if (kind === "tulsi") shower("tulsi");
   else if (kind === "dhoop") incense();
   else if (kind === "aarti") aarti();
   else if (kind === "pranam") bow();

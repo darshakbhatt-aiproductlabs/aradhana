@@ -196,7 +196,7 @@
     <button type="button" id="cinemaBtn" aria-label="Cinematic view">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
     </button>
-    <p id="hint">Drag to walk around the murti</p>
+    <p id="hint">The murti has taken form</p>
     <div id="hud">
       <p id="mantraHi" title="Tap to chant"></p>
       <div id="hudMeta">
@@ -229,7 +229,7 @@
   </div>
 </div>
 <script type="module">
-import { mountMurti, showDeity, playOffer, resize } from "./murti-scene.js?v=u3";
+import { mountMurti, showDeity, playOffer, resize } from "./murti-scene.js?v=u5";
 
 const STEP = {
   jal: { id: "jal", hi: "जल", en: "Pour jal on the crown", fx: "water", color: "#7eb7e0" },
@@ -244,12 +244,12 @@ const STEP = {
   white: { id: "flowers", hi: "श्वेत पुष्प", en: "White flowers on the head", fx: "flowers", color: "#f4efe4" },
   red: { id: "flowers", hi: "लाल पुष्प", en: "Red flowers on the head", fx: "flowers", color: "#d45b4a" },
   bilva: { id: "flowers", hi: "बिल्व", en: "Bilva leaves on the head", fx: "bilva", color: "#6a9a4a" },
-  durva: { id: "flowers", hi: "दूर्वा", en: "Durva on the crown", fx: "bilva", color: "#6a9a4a" },
-  tulsi: { id: "flowers", hi: "तुलसी", en: "Tulsi on the crown", fx: "bilva", color: "#3d8b5a" },
+  durva: { id: "flowers", hi: "दूर्वा", en: "Durva on the crown", fx: "durva", color: "#6a9a4a" },
+  tulsi: { id: "flowers", hi: "तुलसी", en: "Tulsi at the lotus feet", fx: "tulsi", color: "#3d8b5a" },
   dhoop: { id: "dhoop", hi: "धूप", en: "Offer incense", fx: "dhoop", color: "#c4b8a8" },
   aarti: { id: "aarti", hi: "आरती", en: "Circle the lamp", fx: "aarti", color: "#f0b040" },
   pranam: { id: "pranam", hi: "प्रणाम", en: "Bow to the murti", fx: "pranam", color: "#ff7a5c" },
-  arghya: { id: "jal", hi: "अर्घ्य", en: "Offer arghya to Surya", fx: "water", color: "#7eb7e0" },
+  arghya: { id: "jal", hi: "अर्घ्य", en: "Offer arghya to Surya", fx: "arghya", color: "#7eb7e0" },
 };
 
 const FAMILIES = {
@@ -487,7 +487,7 @@ fileInput.addEventListener("change", (e) => {
 
 async function boot() {
   try {
-    const r = await fetch("./deities.json?v=u2");
+    const r = await fetch("./deities.json?v=u5");
     const data = await r.json();
     MAIN = data.deities || [];
   } catch (e) {
