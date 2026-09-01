@@ -26,7 +26,7 @@ const PRACTICES = [
     hi: "मूर्ति",
     en: "Murti",
     title: "Living puja",
-    blurb: "A temple murti in the sanctum. One Shiva, one Ganpati. Pour jal and milk from the crown.",
+    blurb: "Bronze murtis in the sanctum. Pour jal from the crown. Tilak on the brow.",
   },
 ] as const;
 

@@ -1688,19 +1688,57 @@
       osc.start(t0); osc.stop(t0+(final?0.8:0.2));
     }catch(e){}
   }
+  let chantAudio = null;
+  const CHANT_BY_TEXT = {
+    "ॐ गं गणपतये नमः": "ganesha",
+    "ॐ नमः शिवाय": "shiva",
+    "ॐ उमामहेश्वराय नमः": "shiva-parvati",
+    "ॐ नटराजाय नमः": "nataraja",
+    "ॐ नमो नारायणाय": "vishnu",
+    "ॐ नमो वेङ्कटेशाय": "venkateswara",
+    "ॐ दुं दुर्गायै नमः": "durga",
+    "ॐ क्रिं कालीकायै नमः": "kali",
+    "ॐ ऐं सरस्वत्यै नमः": "saraswati",
+    "ॐ ब्रह्मणे नमः": "brahma",
+    "ॐ सूर्याय नमः": "surya",
+    "ॐ नमो भगवते वासुदेवाय": "krishna",
+    "ॐ राधाकृष्णाभ्यां नमः": "radha-krishna",
+    "ॐ श्री रामाय नमः": "rama",
+    "ॐ हनुमते नमः": "hanuman",
+    "ॐ शरवणभवाय नमः": "murugan",
+    "स्वामीये शरणं अय्यप्पा": "ayyappa",
+    "ॐ द्रां दत्तात्रेयाय नमः": "dattatreya",
+    "ॐ शं शनैश्चराय नमः": "shani",
+    "ॐ": "om",
+    "ॐ भूर्भुवः स्वः तत्सवितुर्वरेण्यं भर्गो देवस्य धीमहि धियो यो नः प्रचोदयात्": "gayatri",
+  };
   function speakMantra(isFinal){
-    if(!voiceOn || !window.speechSynthesis) return;
+    if(!voiceOn) return;
+    const text = ((currentMode==='scoreboard' && sbMantra ? sbMantra.textContent : mantraLabel.textContent)||'').trim();
+    let utter = isFinal
+      ? (text ? text : '')
+      : (text && text.length < 80 ? text : '');
+    if(!utter) return;
+    const key = utter.replace(/[।. ]+$/,'').trim();
+    const id = CHANT_BY_TEXT[key];
+    const gender = (localStorage.getItem('aradhana-voice') || 'female') === 'male' ? 'male' : 'female';
+    if (chantAudio) { try { chantAudio.pause(); } catch(e){} chantAudio = null; }
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    if (id) {
+      const a = new Audio('../chants/' + gender + '/' + id + '.mp3?v=u2');
+      a.volume = 0.82;
+      chantAudio = a;
+      a.play().catch(()=>{});
+      return;
+    }
+    if(!window.speechSynthesis) return;
     try{
-      window.speechSynthesis.cancel();
-      const text = ((currentMode==='scoreboard' && sbMantra ? sbMantra.textContent : mantraLabel.textContent)||'').trim();
-      let utter = isFinal
-        ? (text ? text+'। बहुत अच्छा!' : (toDevanagari(TOTAL)+' पूरा। बहुत अच्छा!'))
-        : (text && text.length < 42 ? text : '');
-      if(!utter) return;
       const u = new SpeechSynthesisUtterance(utter);
-      u.lang='hi-IN'; u.rate=0.9; u.pitch=1.28; u.volume=0.68;
+      u.lang='hi-IN'; u.rate=0.84; u.pitch= gender==='male' ? 0.92 : 1.02; u.volume=0.68;
       const voices = window.speechSynthesis.getVoices();
-      const pref = voices.find(v=>v.lang.startsWith('hi')&&(v.name.toLowerCase().includes('female')||v.name.toLowerCase().includes('veena'))) || voices.find(v=>v.lang.startsWith('hi'));
+      const hi = voices.filter(v=>/^hi/i.test(v.lang)||/hindi/i.test(v.name));
+      const tagged = hi.filter(v => gender==='male' ? /male|madhur|ravi/i.test(v.name) : /female|swara|heera/i.test(v.name));
+      const pref = tagged[0] || hi[0];
       if(pref) u.voice=pref;
       window.speechSynthesis.speak(u);
     }catch(e){}
@@ -1988,6 +2026,7 @@
     if(focusToggle){ focusToggle.textContent = '▲'; focusToggle.title = 'Hide controls'; }
     document.body.classList.add('cinematic-active');
     cinematicHeader.classList.add('show');
+    try { parent.postMessage({ type: 'aradhana-cinematic', on: true }, '*'); } catch(e) {}
     speedSlider.disabled=false; updateSpeedLabel(); updatePauseIcon();
     resetBtn.disabled=true; playBackdropVideo();
     setTimeout(layoutBeads,30); restartInterval();
@@ -1997,6 +2036,7 @@
     if(autoInterval){clearInterval(autoInterval);autoInterval=null;}
     document.body.classList.remove('cinematic-active','reveal-image');
     malaWrap.classList.remove('dissolve');
+    try { parent.postMessage({ type: 'aradhana-cinematic', on: false }, '*'); } catch(e) {}
     if(scoreboard){ scoreboard.style.opacity=''; scoreboard.style.transition=''; scoreboard.style.pointerEvents=''; }
     cinematicHeader.classList.remove('show');
     resetBtn.disabled=false;

@@ -20,6 +20,11 @@ const _v = new THREE.Vector3();
 let loadGen = 0;
 let kalashAnim = null;
 let dropGeo = null;
+const streams = [];
+let diyaMap = null;
+let flameMap = null;
+let flameFallback = null;
+let tubeGeoDummy = null;
 
 
 const ANCHORS = {
@@ -380,43 +385,127 @@ function reliefGeometry(imgData, w, h, width, height) {
   return geo;
 }
 
-function pathsFromRows(rows, w, h, width, height, y0, spec) {
+function densestColumn(data, w, h, y0, y1, x0, x1) {
+  const xStart = Math.max(0, Math.floor(x0));
+  const xEnd = Math.min(w - 1, Math.ceil(x1));
+  const yStart = Math.max(0, Math.floor(y0));
+  const yEnd = Math.min(h - 1, Math.ceil(y1));
+  const scores = new Float32Array(w);
+  for (let y = yStart; y <= yEnd; y++) {
+    const row = y * w;
+    for (let x = xStart; x <= xEnd; x++) scores[x] += data[(row + x) * 4 + 3];
+  }
+  let bestX = (xStart + xEnd) * 0.5;
+  let best = -1;
+  for (let x = xStart + 1; x < xEnd; x++) {
+    const s = scores[x - 1] + scores[x] * 2 + scores[x + 1];
+    if (s > best) { best = s; bestX = x; }
+  }
+  return bestX;
+}
+
+function detectHead(rows, imgData, w, h, spec) {
+  spec = spec || {};
+  const n = rows.length;
+  if (n < 8) return null;
+  const widths = rows.map((r) => r.maxX - r.minX + 1);
+  const topN = Math.max(6, Math.round(n * 0.1));
+  const sample = widths.slice(0, topN).slice().sort((a, b) => a - b);
+  const earlyMed = sample[sample.length >> 1] || widths[0];
+  let headEnd = Math.min(n - 1, Math.round(n * 0.32));
+  for (let i = topN; i < Math.min(n, Math.round(n * 0.55)); i++) {
+    if (widths[i] > earlyMed * 1.75) {
+      headEnd = Math.max(topN, i - 1);
+      break;
+    }
+  }
+  const prefer = spec.crownX != null ? spec.crownX : 0.5;
+  const headRows = rows.slice(0, headEnd + 1);
+  let minX = w;
+  let maxX = 0;
+  headRows.forEach((r) => {
+    minX = Math.min(minX, r.minX);
+    maxX = Math.max(maxX, r.maxX);
+  });
+  const headW = maxX - minX + 1;
+  if (headW > earlyMed * 2.2) {
+    if (prefer < 0.45) maxX = Math.min(maxX, Math.round(minX + headW * 0.52));
+    else if (prefer > 0.55) minX = Math.max(minX, Math.round(minX + headW * 0.48));
+    else {
+      const c = (minX + maxX) / 2;
+      minX = Math.round(c - headW * 0.28);
+      maxX = Math.round(c + headW * 0.28);
+    }
+  }
+  const yTop = headRows[0].y;
+  const yBot = headRows[headRows.length - 1].y;
+  const headH = Math.max(8, yBot - yTop);
+  const crownY = yTop + headH * 0.07;
+  const browY = yTop + headH * 0.34;
+  const faceX0 = minX + (maxX - minX) * 0.28;
+  const faceX1 = minX + (maxX - minX) * 0.72;
+  const data = imgData.data;
+  const crownX = densestColumn(data, w, h, yTop, yTop + headH * 0.16, faceX0, faceX1);
+  const browX = densestColumn(data, w, h, browY - headH * 0.06, browY + headH * 0.08, faceX0, faceX1);
+  return {
+    crown: { x: crownX, y: crownY },
+    brow: { x: browX, y: browY },
+    head: { minX, maxX, yTop, yBot, h: headH },
+  };
+}
+
+function pathsFromRows(rows, w, h, width, height, y0, spec, imgData) {
   spec = spec || {};
   const toLocal = (px, py, z) => new THREE.Vector3(
     ((px / (w - 1)) - 0.5) * width,
     y0 + (0.5 - py / (h - 1)) * height,
     z,
   );
+  const head = imgData ? detectHead(rows, imgData, w, h, spec) : null;
   const crownT = spec.crown != null ? spec.crown : 0.04;
   const browT = spec.brow != null ? spec.brow : (BROW_T[spec.id] || BROW_T.custom);
   const cx = spec.crownX != null ? spec.crownX : 0.5;
-  const start = Math.min(rows.length - 1, Math.max(0, Math.round(rows.length * crownT)));
+  const start = Math.min(rows.length - 1, Math.max(0, Math.round(rows.length * (head ? (head.crown.y / Math.max(1, rows[rows.length - 1].y)) : crownT))));
   const step = Math.max(1, ((rows.length - start) / 20) | 0);
   const left = [];
   const right = [];
   const center = [];
+  const faceMin = head ? head.head.minX : null;
+  const faceMax = head ? head.head.maxX : null;
   for (let i = start; i < rows.length; i += step) {
     const r = rows[i];
-    left.push(toLocal(r.minX, r.y, 0.14));
-    right.push(toLocal(r.maxX, r.y, 0.14));
-    center.push(toLocal(r.mid, r.y, 0.18));
+    const l = faceMin != null ? Math.max(r.minX, faceMin) : r.minX;
+    const rr = faceMax != null ? Math.min(r.maxX, faceMax) : r.maxX;
+    const mid = head && i < start + 8
+      ? head.brow.x
+      : (l + rr) * 0.5;
+    left.push(toLocal(l, r.y, 0.14));
+    right.push(toLocal(rr, r.y, 0.14));
+    center.push(toLocal(mid, r.y, 0.2));
   }
   const last = rows[rows.length - 1];
   left.push(toLocal(last.minX, last.y, 0.1));
   right.push(toLocal(last.maxX, last.y, 0.1));
   center.push(toLocal(last.mid, last.y, 0.12));
+  const clampX = (row, frac) => Math.min(row.maxX, Math.max(row.minX, frac * (w - 1)));
   const crownRow = rows[start];
   const browRow = rows[Math.min(rows.length - 1, Math.max(start, Math.round(rows.length * browT)))];
   const chestRow = rows[Math.min(rows.length - 1, Math.round(rows.length * 0.5))];
-  const clampX = (row, frac) => Math.min(row.maxX, Math.max(row.minX, frac * (w - 1)));
+  const crownPos = head
+    ? toLocal(head.crown.x, head.crown.y, 0.26)
+    : toLocal(clampX(crownRow, cx), crownRow.y, 0.22);
+  const browPos = head
+    ? toLocal(head.brow.x, head.brow.y, 0.28)
+    : toLocal(clampX(browRow, cx), browRow.y, 0.24);
   return {
     left,
     right,
     center,
-    crownPos: toLocal(clampX(crownRow, cx), crownRow.y, 0.22),
-    browPos: toLocal(clampX(browRow, cx), browRow.y, 0.24),
+    crownPos,
+    browPos,
     chestPos: toLocal(chestRow.mid, chestRow.y, 0.18),
     basePos: toLocal(last.mid, last.y, 0.08),
+    faceR: head ? Math.max(0.08, ((head.head.maxX - head.head.minX) / (w - 1)) * width * 0.35) : 0.16,
   };
 }
 
@@ -506,12 +595,13 @@ async function makeStatue(spec) {
   let base;
   let paths = null;
   if (rows.length > 8) {
-    const P = pathsFromRows(rows, punched.w, punched.h, width, height, y0, spec);
+    const P = pathsFromRows(rows, punched.w, punched.h, width, height, y0, spec, punched.data);
     paths = { left: P.left, right: P.right, center: P.center };
     crown = dummy(P.crownPos.x, P.crownPos.y, P.crownPos.z);
     brow = dummy(P.browPos.x, P.browPos.y, P.browPos.z);
     chest = dummy(P.chestPos.x, P.chestPos.y, P.chestPos.z);
     base = dummy(P.basePos.x, P.basePos.y, P.basePos.z);
+    g.userData.faceR = P.faceR;
   } else {
     const uv = ANCHORS[spec.id] || ANCHORS.custom;
     crown = dummy((uv.crown[0] - 0.5) * width, y0 + (uv.crown[1] - 0.5) * height, 0.22);
@@ -563,10 +653,74 @@ function addCoat(kind) {
   coats.push(coat);
 }
 
+function fluidMat(kind) {
+  const isMilk = kind === "milk";
+  const isOil = kind === "oil";
+  const m = new THREE.MeshStandardMaterial({
+    color: isOil ? 0x6b4a1e : isMilk ? 0xf6f1e6 : 0x6eb8dc,
+    transparent: true,
+    opacity: isOil ? 0.82 : isMilk ? 0.86 : 0.58,
+    roughness: isMilk ? 0.24 : 0.06,
+    metalness: 0.04,
+    depthWrite: false,
+  });
+  m.userData.localMat = true;
+  return m;
+}
+
+function rebuildTube(mesh, pts, radius) {
+  if (!pts || pts.length < 2) return;
+  const curve = new THREE.CatmullRomCurve3(pts);
+  const segs = Math.max(10, Math.min(64, pts.length * 4));
+  const geo = new THREE.TubeGeometry(curve, segs, radius, 10, false);
+  geo.userData.localGeo = true;
+  const old = mesh.geometry;
+  mesh.geometry = geo;
+  if (old && old !== tubeGeoDummy) old.dispose();
+}
+
+function addStream(pts, radius, kind, growSpeed, life) {
+  if (!pts || pts.length < 2) return;
+  if (!tubeGeoDummy) tubeGeoDummy = new THREE.SphereGeometry(0.001, 3, 3);
+  const mat = fluidMat(kind);
+  const mesh = new THREE.Mesh(tubeGeoDummy, mat);
+  mesh.castShadow = false;
+  mesh.receiveShadow = false;
+  rebuildTube(mesh, pts.slice(0, 2), radius);
+  fxRoot.add(mesh);
+  streams.push({
+    mesh,
+    pts,
+    radius,
+    grown: 0.08,
+    growSpeed: growSpeed || 1.6,
+    life: life || 2.1,
+    fadeAfter: (life || 2.1) * 0.55,
+    baseOpacity: mat.opacity,
+    kind,
+  });
+}
+
+function arcPoints(from, to, n) {
+  const pts = [];
+  const mid = from.clone().lerp(to, 0.5);
+  mid.y = Math.max(to.y, from.y) + 0.04;
+  mid.z = (from.z + to.z) * 0.5 + 0.04;
+  for (let i = 0; i <= n; i++) {
+    const t = i / n;
+    const a = from.clone().lerp(mid, t);
+    const b = mid.clone().lerp(to, t);
+    const p = a.lerp(b, t);
+    p.y -= 4 * t * (1 - t) * 0.02;
+    pts.push(p);
+  }
+  return pts;
+}
+
 function dropMesh(matRef, size) {
-  if (!dropGeo) dropGeo = new THREE.SphereGeometry(1, 8, 8);
+  if (!dropGeo) dropGeo = new THREE.SphereGeometry(1, 10, 10);
   const d = new THREE.Mesh(dropGeo, matRef);
-  d.scale.set(size * 0.65, size * 1.4, size * 0.65);
+  d.scale.set(size * 0.85, size * 1.15, size * 0.85);
   d.castShadow = false;
   d.receiveShadow = false;
   return d;
@@ -578,10 +732,10 @@ function pour(kind) {
   const brow = worldOf(current.userData.anchors.forehead);
   const chest = worldOf(current.userData.anchors.chest);
   const base = worldOf(current.userData.anchors.base);
-  const hold = top.clone().add(new THREE.Vector3(0.16, 0.36, 0.2));
-  const spout = hold.clone().add(new THREE.Vector3(-0.04, -0.02, 0));
+  const hold = top.clone().add(new THREE.Vector3(0.22, 0.34, 0.28));
+  const spout = hold.clone().add(new THREE.Vector3(-0.02, -0.04, 0.01));
   kalash.position.copy(hold);
-  kalash.rotation.set(0.08, 0, -0.12);
+  kalash.rotation.set(0.1, 0.2, -0.18);
   kalash.visible = true;
   kalashAnim = { t: 0, hold };
   const coatKind = kind === "oil" ? "milk" : kind;
@@ -593,39 +747,45 @@ function pour(kind) {
   }
   const isMilk = kind === "milk";
   const isOil = kind === "oil";
-  const colorMat = isOil ? mats.oil : (isMilk ? mats.milk : mats.water);
-  const n = reduced ? 28 : 72;
-  const lingam = current.userData.kind === "lingam";
+  const radius = isMilk || isOil ? 0.011 : 0.0075;
+  const pourArc = arcPoints(spout, top, 10);
+  addStream(pourArc, radius, kind, 3.4, 1.85);
+
   const localPaths = current.userData.paths;
-  const worldPaths = localPaths
-    ? {
-      left: localPaths.left.map((p) => current.localToWorld(p.clone())),
-      right: localPaths.right.map((p) => current.localToWorld(p.clone())),
-      center: localPaths.center.map((p) => current.localToWorld(p.clone())),
+  const worldPath = (arr) => arr.map((p) => current.localToWorld(p.clone()));
+  const rivulets = [];
+  if (current.userData.kind === "lingam") {
+    const helixPts = [];
+    for (let i = 0; i < 18; i++) {
+      const t = i / 17;
+      const a = t * Math.PI * 2.2;
+      helixPts.push(new THREE.Vector3(Math.cos(a) * (0.08 + t * 0.12), top.y - t * 0.62, Math.sin(a) * (0.08 + t * 0.1)));
     }
-    : null;
-  const size = isMilk || isOil ? 0.02 : 0.014;
-  for (let i = 0; i < n; i++) {
-    const d = dropMesh(colorMat, size);
-    let body = null;
-    if (!lingam) {
-      if (worldPaths) {
-        const which = i % 3;
-        body = which === 0 ? worldPaths.center : which === 1 ? worldPaths.left : worldPaths.right;
-      } else {
-        body = [top.clone(), brow.clone(), chest.clone(), base.clone()];
-      }
-    }
-    const path = body ? [spout.clone(), top.clone(), ...body] : null;
+    rivulets.push(helixPts);
+  } else if (localPaths) {
+    rivulets.push(worldPath(localPaths.center));
+    rivulets.push(worldPath(localPaths.left));
+    rivulets.push(worldPath(localPaths.right));
+  } else {
+    rivulets.push([top.clone(), brow.clone(), chest.clone(), base.clone()]);
+  }
+  rivulets.forEach((pts, i) => {
+    const r = i === 0 ? radius * 0.85 : radius * 0.55;
+    addStream(pts, r, kind, 1.15 + i * 0.15, 2.4);
+  });
+
+  const splashMat = fluidMat(kind);
+  const splashN = reduced ? 6 : 12;
+  for (let i = 0; i < splashN; i++) {
+    const d = dropMesh(splashMat, isMilk || isOil ? 0.016 : 0.012);
+    d.position.copy(top);
     d.userData = {
-      ang: Math.random() * Math.PI * 2,
-      u: -((i / n) * 1.05 + Math.random() * 0.04),
-      speed: (isMilk || isOil ? 0.44 : 0.64) + Math.random() * 0.22,
-      kind: current.userData.kind,
-      path,
+      vx: (Math.random() - 0.5) * 0.18,
+      vy: 0.12 + Math.random() * 0.1,
+      vz: (Math.random() - 0.5) * 0.12,
+      life: 0.45 + Math.random() * 0.25,
+      splash: true,
     };
-    d.position.copy(spout);
-    d.visible = false;
     fxRoot.add(d);
     drops.push(d);
   }
@@ -635,12 +795,31 @@ function stepKalash(dt) {
   if (!kalashAnim || !kalash) return;
   kalashAnim.t += dt;
   const t = kalashAnim.t;
-  if (t < 0.32) kalash.rotation.z = -0.12 - 0.7 * (t / 0.32);
-  else if (t < 1.55) kalash.rotation.z = -0.82;
-  else if (t < 2.05) kalash.rotation.z = -0.82 + 0.7 * ((t - 1.55) / 0.5);
+  if (t < 0.28) kalash.rotation.z = -0.18 - 0.85 * (t / 0.28);
+  else if (t < 1.45) kalash.rotation.z = -1.03;
+  else if (t < 1.95) kalash.rotation.z = -1.03 + 0.85 * ((t - 1.45) / 0.5);
   else {
     kalash.visible = false;
     kalashAnim = null;
+  }
+}
+
+function stepStreams(dt) {
+  for (let i = streams.length - 1; i >= 0; i--) {
+    const s = streams[i];
+    s.grown = Math.min(1, s.grown + s.growSpeed * dt);
+    s.life -= dt;
+    const count = Math.max(2, Math.ceil(2 + (s.pts.length - 2) * s.grown));
+    const pts = s.pts.slice(0, count);
+    const fade = s.life < 0.55 ? Math.max(0, s.life / 0.55) : 1;
+    s.mesh.material.opacity = s.baseOpacity * fade;
+    if (s.grown < 1 || fade < 1) rebuildTube(s.mesh, pts, s.radius * (0.75 + 0.25 * fade));
+    if (s.life <= 0) {
+      fxRoot.remove(s.mesh);
+      if (s.mesh.geometry && s.mesh.geometry !== tubeGeoDummy) s.mesh.geometry.dispose();
+      if (s.mesh.material && s.mesh.material.userData.localMat) s.mesh.material.dispose();
+      streams.splice(i, 1);
+    }
   }
 }
 
@@ -677,18 +856,19 @@ function mark(kind) {
 function shower(kind) {
   if (!current) return;
   const top = worldOf(current.userData.anchors.crown);
-  const n = reduced ? 10 : 22;
+  const n = reduced ? 10 : 18;
   const isLeaf = kind === "bilva";
+  const spread = Math.min(0.16, (current.userData.faceR || 0.14) * 1.1);
   for (let i = 0; i < n; i++) {
     const p = mesh(
       isLeaf ? new THREE.CircleGeometry(0.045, 5) : new THREE.SphereGeometry(0.035, 8, 6),
       isLeaf ? mats.leaf : mats.petal,
     );
     if (!isLeaf) p.scale.set(0.7, 0.22, 1.1);
-    p.position.set(top.x + (Math.random() - 0.5) * 0.8, 2.1 + Math.random() * 0.3, top.z + (Math.random() - 0.5) * 0.6);
+    p.position.set(top.x + (Math.random() - 0.5) * 0.35, 2.05 + Math.random() * 0.25, top.z + 0.12 + Math.random() * 0.16);
     p.userData = {
       vy: 0,
-      target: top.clone().add(new THREE.Vector3((Math.random() - 0.5) * 0.2, 0.02, (Math.random() - 0.5) * 0.16)),
+      target: top.clone().add(new THREE.Vector3((Math.random() - 0.5) * spread, 0.02, (Math.random() - 0.5) * spread * 0.6)),
     };
     fxRoot.add(p);
     petals.push(p);
@@ -709,20 +889,109 @@ function incense() {
   }
 }
 
+function canvasFlame() {
+  const c = document.createElement("canvas");
+  c.width = 64;
+  c.height = 128;
+  const ctx = c.getContext("2d");
+  const grd = ctx.createRadialGradient(32, 100, 3, 32, 70, 34);
+  grd.addColorStop(0, "rgba(255,255,230,1)");
+  grd.addColorStop(0.22, "rgba(255,196,70,0.95)");
+  grd.addColorStop(0.55, "rgba(255,90,12,0.42)");
+  grd.addColorStop(1, "rgba(255,40,0,0)");
+  ctx.fillStyle = grd;
+  ctx.beginPath();
+  ctx.moveTo(32, 10);
+  ctx.bezierCurveTo(52, 48, 50, 92, 32, 122);
+  ctx.bezierCurveTo(14, 92, 12, 48, 32, 10);
+  ctx.fill();
+  const t = new THREE.CanvasTexture(c);
+  t.needsUpdate = true;
+  return t;
+}
+
+function flameSprite(sx, sy) {
+  const map = flameMap || flameFallback;
+  const mat = new THREE.SpriteMaterial({
+    map,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const s = new THREE.Sprite(mat);
+  s.scale.set(sx || 0.1, sy || 0.18, 1);
+  s.userData.kind = "flameSprite";
+  return s;
+}
+
+function makeDiyaGroup() {
+  const g = new THREE.Group();
+  const bowl = lathe(
+    [[0.0, 0], [0.05, 0.008], [0.072, 0.03], [0.06, 0.04], [0.02, 0.042]],
+    mats.gold,
+  );
+  bowl.castShadow = false;
+  g.add(bowl);
+  if (diyaMap) {
+    const plane = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.2, 0.17),
+      new THREE.MeshBasicMaterial({ map: diyaMap, transparent: true, depthWrite: false }),
+    );
+    plane.rotation.x = -1.05;
+    plane.position.set(0, 0.028, 0.01);
+    plane.userData.kind = "diyaPlane";
+    g.add(plane);
+  }
+  const flame = flameSprite(0.09, 0.16);
+  flame.position.set(0, 0.11, 0);
+  g.add(flame);
+  const light = new THREE.PointLight(0xffb060, 1.15, 3.4);
+  light.position.set(0, 0.14, 0);
+  g.add(light);
+  g.userData.flame = flame;
+  g.userData.light = light;
+  return g;
+}
+
+function refreshSanctumDiyas() {
+  if (!sanctumRoot) return;
+  sanctumRoot.traverse((o) => {
+    if (o.userData && o.userData.kind === "flameSprite" && flameMap && o.material) {
+      o.material.map = flameMap;
+      o.material.needsUpdate = true;
+    }
+    if (o.userData && o.userData.kind === "diyaPlane" && diyaMap && o.material) {
+      o.material.map = diyaMap;
+      o.material.needsUpdate = true;
+    }
+  });
+}
+
+function loadProps() {
+  if (!flameFallback) flameFallback = canvasFlame();
+  const loader = new THREE.TextureLoader();
+  loader.load("../deities/diya.webp?v=u2", (t) => {
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.needsUpdate = true;
+    diyaMap = t;
+    refreshSanctumDiyas();
+  });
+  loader.load("../deities/flame.webp?v=u2", (t) => {
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.needsUpdate = true;
+    flameMap = t;
+    refreshSanctumDiyas();
+  });
+}
+
 function aarti() {
   if (aartiLamp) {
     fxRoot.remove(aartiLamp);
     aartiLamp = null;
   }
-  const g = new THREE.Group();
-  g.add(mesh(new THREE.CylinderGeometry(0.055, 0.08, 0.06, 12), mats.gold, 0, 0, 0));
-  g.add(mesh(new THREE.ConeGeometry(0.032, 0.12, 8), mats.flame, 0, 0.09, 0));
-  const pl = new THREE.PointLight(0xffb040, 1.05, 3.2);
-  pl.position.set(0, 0.12, 0);
-  g.add(pl);
-  aartiLamp = g;
+  aartiLamp = makeDiyaGroup();
   aartiT = 0;
-  fxRoot.add(g);
+  fxRoot.add(aartiLamp);
 }
 
 function bow() {
@@ -746,6 +1015,21 @@ function bow() {
 function stepDrops(dt) {
   for (let i = drops.length - 1; i >= 0; i--) {
     const d = drops[i];
+    if (d.userData.splash) {
+      d.userData.vy -= 2.6 * dt;
+      d.position.x += d.userData.vx * dt;
+      d.position.y += d.userData.vy * dt;
+      d.position.z += d.userData.vz * dt;
+      d.userData.life -= dt;
+      const s = Math.max(0.2, d.userData.life * 2);
+      d.scale.setScalar(s * 0.012);
+      if (d.material && d.material.opacity != null) d.material.opacity = Math.max(0, d.userData.life * 1.6);
+      if (d.userData.life <= 0 || d.position.y < 0.35) {
+        fxRoot.remove(d);
+        drops.splice(i, 1);
+      }
+      continue;
+    }
     d.userData.u += d.userData.speed * dt;
     const u = d.userData.u;
     if (u < 0) {
@@ -805,14 +1089,22 @@ function stepSmoke(dt) {
 function stepAarti(dt) {
   if (!aartiLamp || !current) return;
   aartiT += dt;
-  const chest = worldOf(current.userData.anchors.forehead);
-  const t = aartiT * 1.55;
+  const face = worldOf(current.userData.anchors.forehead);
+  const r = Math.max(0.16, (current.userData.faceR || 0.16) + 0.08);
+  const t = aartiT * 1.7;
   aartiLamp.position.set(
-    chest.x + Math.sin(t) * 0.38,
-    chest.y - 0.08 + Math.sin(t * 2) * 0.07,
-    chest.z + 0.34 + Math.cos(t) * 0.12,
+    face.x + Math.sin(t) * r,
+    face.y - 0.02 + Math.sin(t * 2) * 0.04,
+    face.z + 0.22 + Math.cos(t) * r * 0.55,
   );
-  if (aartiT > 3.4) { fxRoot.remove(aartiLamp); aartiLamp = null; }
+  if (aartiLamp.userData.flame) {
+    const flick = 1 + Math.sin(aartiT * 18) * 0.08 + Math.sin(aartiT * 31) * 0.05;
+    aartiLamp.userData.flame.scale.set(0.09 * flick, 0.16 * flick, 1);
+  }
+  if (aartiLamp.userData.light) {
+    aartiLamp.userData.light.intensity = 1.05 + Math.sin(aartiT * 22) * 0.2;
+  }
+  if (aartiT > 3.6) { fxRoot.remove(aartiLamp); aartiLamp = null; }
 }
 
 function stepCoats(dt) {
@@ -834,13 +1126,15 @@ function loop(t) {
   lastT = t;
   stepDrops(dt);
   stepKalash(dt);
+  stepStreams(dt);
   stepPetals(dt);
   stepSmoke(dt);
   stepAarti(dt);
   stepCoats(dt);
   if (sanctumRoot && sanctumRoot.userData.flames) {
     sanctumRoot.userData.flames.forEach((f, i) => {
-      f.scale.y = 1 + Math.sin(t * 0.008 + i) * 0.18;
+      const flick = 1 + Math.sin(t * 0.012 + i * 1.7) * 0.12 + Math.sin(t * 0.031 + i) * 0.07;
+      if (f.scale) f.scale.set(0.09 * flick, 0.16 * flick, 1);
     });
   }
   if (controls) controls.update();
@@ -850,6 +1144,11 @@ function loop(t) {
 function clearFx() {
   [...drops, ...petals, ...smokes].forEach((o) => fxRoot.remove(o));
   drops.length = 0; petals.length = 0; smokes.length = 0;
+  streams.forEach((s) => {
+    fxRoot.remove(s.mesh);
+    if (s.mesh.geometry && s.mesh.geometry !== tubeGeoDummy) s.mesh.geometry.dispose();
+  });
+  streams.length = 0;
   marks.forEach((m) => { if (m.parent) m.parent.remove(m); });
   marks.length = 0;
   coats.forEach((c) => { if (c.parent) c.parent.remove(c); });
@@ -882,16 +1181,9 @@ function buildSanctum() {
   });
   const flames = [];
   function diya(x, z) {
-    const d = new THREE.Group();
+    const d = makeDiyaGroup();
     d.position.set(x, 0.4, z);
-    d.add(mesh(new THREE.CylinderGeometry(0.055, 0.075, 0.045, 12), mats.gold, 0, 0, 0));
-    const f = mesh(new THREE.ConeGeometry(0.028, 0.09, 8), mats.flame, 0, 0.065, 0);
-    f.castShadow = false;
-    d.add(f);
-    flames.push(f);
-    const light = new THREE.PointLight(0xffb060, 0.6, 3.6);
-    light.position.set(0, 0.14, 0);
-    d.add(light);
+    if (d.userData.flame) flames.push(d.userData.flame);
     return d;
   }
   g.add(diya(-0.92, 0.58), diya(0.92, 0.58));
@@ -900,6 +1192,11 @@ function buildSanctum() {
 }
 
 function frameStatue(lingam) {
+  if (!controls || !camera) return;
+  const damp = controls.enableDamping;
+  controls.enableDamping = false;
+  controls.autoRotate = false;
+  controls.autoRotateSpeed = 0;
   if (lingam) {
     controls.minAzimuthAngle = -Infinity;
     controls.maxAzimuthAngle = Infinity;
@@ -908,16 +1205,20 @@ function frameStatue(lingam) {
   } else {
     controls.minAzimuthAngle = -1.05;
     controls.maxAzimuthAngle = 1.05;
-    controls.target.set(0, 1.2, 0);
-    camera.position.set(0, 1.3, 2.72);
+    controls.target.set(0, 1.18, 0);
+    camera.position.set(0, 1.26, 2.62);
   }
-  controls.autoRotate = !reduced;
+  camera.up.set(0, 1, 0);
+  camera.lookAt(controls.target);
+  controls.update();
+  controls.enableDamping = damp;
 }
 
 export function mountMurti(canvas) {
   canvasEl = canvas;
   reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   readyMats();
+  if (!flameFallback) flameFallback = canvasFlame();
   scene = new THREE.Scene();
   scene.background = new THREE.Color(0xf3e0cc);
   scene.fog = new THREE.Fog(0xf3e0cc, 6.5, 13);
@@ -980,11 +1281,11 @@ export function mountMurti(canvas) {
   controls.maxDistance = 4.2;
   controls.minPolarAngle = Math.PI * 0.32;
   controls.maxPolarAngle = Math.PI * 0.5;
-  controls.target.set(0, 1.2, 0);
-  controls.autoRotate = !reduced;
-  controls.autoRotateSpeed = 0.55;
-  controls.addEventListener("start", () => { controls.autoRotate = false; });
+  controls.target.set(0, 1.18, 0);
+  controls.autoRotate = false;
+  controls.autoRotateSpeed = 0;
 
+  loadProps();
   resize();
   running = true;
   lastT = performance.now();
@@ -1000,7 +1301,7 @@ export async function showDeity(spec) {
     disposeGroup(current);
     current = null;
   }
-  const lingam = spec.id === "shivling" || spec.lingam;
+  const lingam = spec.lingam === true;
   let next;
   try {
     next = lingam ? shivling() : await makeStatue(spec);

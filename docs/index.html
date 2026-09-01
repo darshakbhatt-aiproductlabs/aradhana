@@ -20,25 +20,70 @@
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0;height:100%;background:linear-gradient(165deg,var(--peach),var(--blush) 46%,var(--sky));color:var(--ink);font-family:var(--ui);}
   html{-webkit-font-smoothing:antialiased;}
-  #app{display:flex;flex-direction:column;height:100dvh;}
+  #app{display:flex;flex-direction:column;height:100dvh;position:relative;}
   main{flex:1;min-height:0;position:relative;overflow:hidden;}
   #topnav{
     display:none;position:relative;z-index:30;height:48px;flex-shrink:0;
-    align-items:center;border-bottom:1px solid rgb(255 122 92 / .22);
-    background:rgba(255,253,251,.95);padding:0 .25rem;
+    align-items:center;justify-content:space-between;
+    border-bottom:1px solid rgb(255 122 92 / .22);
+    background:rgba(255,253,251,.95);padding:0 .5rem;
   }
   #topnav.show{display:flex;}
-  #topnav a{
+  #topnav a, #musicBtn, #homeMusic{
     position:relative;z-index:1;
-    display:flex;align-items:center;gap:2px;min-height:40px;padding:0 .75rem;
+    display:flex;align-items:center;justify-content:center;
+    width:40px;height:40px;padding:0;
     color:var(--deep);text-decoration:none;font-size:.875rem;font-weight:800;
-    background:var(--paper);border-radius:999px;
+    background:var(--paper);border-radius:999px;border:0;
     box-shadow:0 0 0 2px rgb(255 184 160 / .35), 0 10px 28px -12px rgb(255 122 92 / .28);
   }
-  #toptitle{
-    position:absolute;left:0;right:0;text-align:center;
-    font-family:var(--display);font-weight:800;pointer-events:none;
+  #topnav a svg, #musicBtn svg, #homeMusic svg{width:22px;height:22px;}
+  #homeMusic{position:absolute;top:max(.75rem, env(safe-area-inset-top));right:.75rem;z-index:40;}
+  #home.view:not(.active) ~ * #homeMusic, body:not(.at-home) #homeMusic{display:none;}
+  html.at-practice #homeMusic{display:none;}
+  html.cinema #topnav, html.cinema nav, html.cinema #homeMusic, html.cinema #musicSheet{display:none !important;}
+  #ytmini{
+    display:none;position:absolute;z-index:40;right:.75rem;bottom:5.5rem;
+    overflow:hidden;border-radius:8px;
+    box-shadow:0 0 0 2px rgb(255 184 160 / .35), 0 10px 28px -12px rgb(255 122 92 / .28);
+    background:var(--paper);
   }
+  html.cinema #ytmini{bottom:.75rem;}
+  #ytmini.show{display:block;}
+  #ytmini iframe{width:160px;height:90px;display:block;}
+  #musicSheet{
+    display:none;position:absolute;inset:0;z-index:50;
+    background:rgba(58,47,74,.25);padding:.75rem;
+    align-items:flex-end;justify-content:center;
+  }
+  #musicSheet.show{display:flex;}
+  #musicSheet .panel{
+    width:100%;max-width:28rem;max-height:min(32rem,80dvh);overflow:hidden;
+    background:var(--paper);border-radius:1.125rem;
+    box-shadow:0 0 0 2px rgb(255 184 160 / .35), 0 10px 28px -12px rgb(255 122 92 / .28);
+  }
+  #musicSheet .hd{display:flex;justify-content:space-between;align-items:center;padding:.75rem 1rem;border-bottom:1px solid rgb(255 122 92 / .22);}
+  #musicSheet .hd h2{margin:0;font-family:var(--display);font-size:1.125rem;color:var(--deep);}
+  #musicSheet .hd p{margin:0;font-size:.75rem;font-weight:700;color:var(--mist);}
+  #musicSheet .list{max-height:min(20rem,50dvh);overflow-y:auto;padding:.35rem;}
+  #musicSheet .list button{
+    display:flex;flex-direction:column;align-items:flex-start;width:100%;
+    padding:.65rem .75rem;border:0;border-radius:.75rem;background:transparent;text-align:left;color:var(--ink);
+  }
+  #musicSheet .list button.on{background:rgb(255 122 92 / .15);color:var(--deep);}
+  #musicSheet .list .hi{font-family:var(--dev);font-size:.875rem;font-weight:800;}
+  #musicSheet .list .en{font-size:.75rem;font-weight:600;color:var(--mist);}
+  #musicSheet form{padding:.75rem 1rem;border-top:1px solid rgb(255 122 92 / .22);}
+  #musicSheet label{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--mist);}
+  #musicSheet .row{display:flex;gap:.5rem;margin-top:.4rem;}
+  #musicSheet input{
+    flex:1;min-height:40px;border-radius:.5rem;border:1px solid rgb(255 122 92 / .22);
+    background:var(--peach);padding:0 .75rem;font:inherit;color:var(--ink);
+  }
+  #musicSheet form button{
+    border:0;border-radius:.5rem;background:var(--coral);color:#fff;font-weight:800;padding:0 .85rem;
+  }
+  #musicSheet .stop{margin-top:.4rem;background:none;border:0;color:var(--mist);font-size:.75rem;font-weight:800;}
   .view{position:absolute;inset:0;display:none;}
   .view.active{display:block;}
   iframe{width:100%;height:100%;border:0;background:transparent;}
@@ -77,8 +122,12 @@
 <body>
 <div id="app">
   <header id="topnav">
-    <a href="#home">← Home</a>
-    <span id="toptitle"></span>
+    <a href="#home" aria-label="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <button type="button" id="musicBtn" aria-label="Background music">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+    </button>
   </header>
   <main>
     <section id="home" class="view active">
@@ -109,7 +158,7 @@
           <div class="card-top"><span class="no">03</span><span class="hi">मूर्ति</span></div>
           <p class="en">Murti</p>
           <p class="title">Living puja</p>
-          <p class="blurb">A temple murti in the sanctum. One Shiva, one Ganpati. Pour jal and milk from the crown.</p>
+          <p class="blurb">Bronze murtis in the sanctum. Pour jal from the crown. Tilak on the brow.</p>
         </a>
         <p class="foot">Sit. Breathe. Begin.</p>
       </div>
@@ -117,6 +166,31 @@
     <section id="japa" class="view"><iframe data-src="practices/japa.html" title="Japa"></iframe></section>
     <section id="path" class="view"><iframe data-src="practices/path.html" title="Vāṇī"></iframe></section>
     <section id="murti" class="view"><iframe data-src="practices/murti.html" title="Murti"></iframe></section>
+  </main>
+  <button type="button" id="homeMusic" aria-label="Background music">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+  </button>
+  <div id="ytmini" aria-hidden="true"></div>
+  <div id="musicSheet" role="dialog" aria-labelledby="musicTitle">
+    <div class="panel">
+      <div class="hd">
+        <div>
+          <h2 id="musicTitle">Chitta Dhyana</h2>
+          <p>@chittadhyana</p>
+        </div>
+        <button type="button" id="musicClose" aria-label="Close" style="width:36px;height:36px;border:0;background:none;font-size:1.25rem;color:var(--ink);">×</button>
+      </div>
+      <div class="list" id="musicList"></div>
+      <form id="musicForm">
+        <label for="ytPaste">Any song from the channel</label>
+        <div class="row">
+          <input id="ytPaste" placeholder="Paste a YouTube link" autocomplete="off">
+          <button type="submit">Play</button>
+        </div>
+        <button type="button" class="stop" id="musicStop">Stop music</button>
+      </form>
+    </div>
+  </div>
   </main>
   <nav aria-label="Practices">
     <a href="#home" data-route="home" class="active">
@@ -140,14 +214,92 @@
 <script>
 (function(){
   const routes = ['home','japa','path','murti'];
-  const titles = { japa: 'Japa', path: 'Vāṇī', murti: 'Murti' };
+  const TRACKS = [
+    { id: "YcrXsatOLPc", title: "Vishnu Sahasranama", hi: "विष्णु सहस्रनाम" },
+    { id: "2FeMAI8Df-w", title: "Ram Rameti Rameti", hi: "राम रामेति रामेति" },
+    { id: "ox0wanwWhiY", title: "Gananayakaya", hi: "गणनायकाय" },
+    { id: "su-tllq9YdI", title: "Shiv Gayatri", hi: "शिव गायत्री" },
+    { id: "CugJ4otMoXU", title: "Laghu Mrityunjaya", hi: "लघु मृत्युञ्जय" },
+    { id: "vdVxL-NsD98", title: "Karpura Gauram", hi: "कर्पूर गौरम्" },
+    { id: "otKEuK3bgmM", title: "Kali 108 japa", hi: "काली जप" },
+    { id: "czT6DkANc5M", title: "Rudraksha purification", hi: "रुद्राक्ष मन्त्र" },
+    { id: "mZBZt_Y8uSk", title: "Rahu Beej", hi: "राहु बीज" },
+    { id: "nSXlmcPcnOI", title: "Hanuman Aadesh", hi: "हनुमान आदेश" },
+    { id: "FsxS6MqRn-U", title: "Tirupati Balaji darshan", hi: "वेंकटेश्वर" },
+    { id: "MtXVbJs4BkE", title: "Bedtime peace mantra", hi: "शान्ति मन्त्र" },
+  ];
+  const YT_KEY = "aradhana-yt";
+  const listEl = document.getElementById("musicList");
+  const sheet = document.getElementById("musicSheet");
+  const mini = document.getElementById("ytmini");
+  let playing = null;
+  try { playing = JSON.parse(localStorage.getItem(YT_KEY) || "null"); } catch(e) { playing = null; }
+
+  function parseId(raw){
+    const v = (raw||"").trim();
+    if(/^[a-zA-Z0-9_-]{11}$/.test(v)) return v;
+    try{
+      const u = new URL(v);
+      if(u.hostname === "youtu.be") return u.pathname.split("/").filter(Boolean)[0] || null;
+      const q = u.searchParams.get("v"); if(q) return q;
+      const parts = u.pathname.split("/").filter(Boolean);
+      if(["shorts","embed","live"].includes(parts[0])) return parts[1] || null;
+    }catch(e){}
+    return null;
+  }
+  function paintList(){
+    listEl.innerHTML = TRACKS.map(t =>
+      `<button type="button" data-id="${t.id}" class="${playing && playing.id===t.id ? "on":""}"><span class="hi">${t.hi}</span><span class="en">${t.title}</span></button>`
+    ).join("");
+  }
+  function setPlaying(next){
+    playing = next;
+    try{
+      if(next) localStorage.setItem(YT_KEY, JSON.stringify(next));
+      else localStorage.removeItem(YT_KEY);
+    }catch(e){}
+    paintList();
+    if(!next){
+      mini.classList.remove("show");
+      mini.innerHTML = "";
+      return;
+    }
+    const src = "https://www.youtube-nocookie.com/embed/"+next.id+"?autoplay=1&loop=1&playlist="+next.id+"&modestbranding=1&rel=0&playsinline=1&controls=1&fs=0";
+    mini.innerHTML = `<iframe title="${next.title}" src="${src}" allow="autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin"></iframe>`;
+    mini.classList.add("show");
+  }
+  function openSheet(){ sheet.classList.add("show"); }
+  function closeSheet(){ sheet.classList.remove("show"); }
+  paintList();
+  if(playing && playing.id) setPlaying(playing);
+  listEl.addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-id]");
+    if(!b) return;
+    const t = TRACKS.find(x => x.id === b.dataset.id);
+    setPlaying({ id: b.dataset.id, title: t ? t.title : "Chitta Dhyana" });
+    closeSheet();
+  });
+  document.getElementById("musicForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const id = parseId(document.getElementById("ytPaste").value);
+    if(!id) return;
+    setPlaying({ id, title: "Chitta Dhyana" });
+    document.getElementById("ytPaste").value = "";
+    closeSheet();
+  });
+  document.getElementById("musicStop").addEventListener("click", () => setPlaying(null));
+  document.getElementById("musicClose").addEventListener("click", closeSheet);
+  document.getElementById("musicBtn").addEventListener("click", openSheet);
+  document.getElementById("homeMusic").addEventListener("click", openSheet);
+
   function show(id){
     if(!routes.includes(id)) id = 'home';
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id===id));
     document.querySelectorAll('nav a').forEach(a => a.classList.toggle('active', a.dataset.route===id));
     const top = document.getElementById('topnav');
     top.classList.toggle('show', id !== 'home');
-    document.getElementById('toptitle').textContent = titles[id] || '';
+    document.documentElement.classList.toggle('at-practice', id !== 'home');
+    document.getElementById('homeMusic').style.display = id === 'home' ? 'flex' : 'none';
     const view = document.getElementById(id);
     const frame = view && view.querySelector('iframe[data-src]');
     if(frame && !frame.getAttribute('src')) frame.setAttribute('src', frame.getAttribute('data-src'));
@@ -157,7 +309,10 @@
     const frame = view && view.querySelector('iframe');
     if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'aradhana-root' }, '*');
   }
-  function fromHash(){ show((location.hash || '#home').replace('#','') || 'home'); }
+  function fromHash(){
+    document.documentElement.classList.remove('cinema');
+    show((location.hash || '#home').replace('#','') || 'home');
+  }
   document.querySelectorAll('nav a').forEach((a) => {
     a.addEventListener('click', (e) => {
       const id = a.dataset.route;
@@ -167,6 +322,12 @@
         pingRoot(id);
       }
     });
+  });
+  window.addEventListener('message', (e) => {
+    const d = e.data;
+    if(d && d.type === 'aradhana-cinematic'){
+      document.documentElement.classList.toggle('cinema', !!d.on);
+    }
   });
   window.addEventListener('hashchange', fromHash);
   fromHash();

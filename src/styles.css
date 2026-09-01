@@ -59,6 +59,11 @@
   }
 }
 
+html.cinema header.app-back,
+html.cinema nav.app-tabs {
+  display: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
