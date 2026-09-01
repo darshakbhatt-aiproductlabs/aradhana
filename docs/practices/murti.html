@@ -71,25 +71,28 @@
     display: block; touch-action: none; background: #fff1e8;
   }
   #hint {
-    position: absolute; top: 10px; left: 0; right: 0; text-align: center;
+    position: absolute; top: 8px; left: 12px; right: 12px; text-align: center;
     font-size: 11px; font-weight: 700; color: var(--mist); pointer-events: none; z-index: 4;
+    opacity: 0.85; transition: opacity 0.7s ease;
   }
+  #hint.gone { opacity: 0; }
   #hud {
-    position: absolute; left: 0; right: 0; top: 32px;
-    text-align: center; z-index: 6; padding: 0 16px; pointer-events: none;
+    position: absolute; left: 12px; right: 12px; bottom: 136px; top: auto;
+    z-index: 8; padding: 0; pointer-events: none;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
   }
   #mantraHi {
     font-family: var(--dev); font-weight: 800; font-size: clamp(13px, 3.4vw, 16px);
     color: var(--coral-deep); margin: 0; pointer-events: auto; cursor: pointer;
-    padding: 5px 12px; border-radius: 999px;
-    background: rgba(255,253,251,0.88); border: var(--border); display: inline-block;
+    padding: 6px 12px; border-radius: 999px; line-height: 1.2;
+    background: rgba(255,253,251,0.94); border: var(--border); display: inline-block;
+    box-shadow: var(--shadow); max-width: 68%;
   }
-  #mantraEn { font-size: 11px; font-weight: 700; color: var(--mist); margin: 4px 0 0; }
-  #caption { margin-top: 6px; }
-  #caption .hi { font-family: var(--dev); font-size: 14px; font-weight: 800; color: var(--coral-deep); margin: 0; }
-  #caption .en { font-size: 11px; font-weight: 700; color: var(--mist); margin: 2px 0 0; }
+  #hudMeta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 72px; }
+  #mantraEn { font-size: 10px; font-weight: 700; color: var(--mist); margin: 0; text-align: right; }
+  #caption { display: none; }
   #track {
-    width: min(220px, 64vw); height: 4px; margin: 8px auto 0; border-radius: 99px;
+    width: 72px; height: 4px; margin: 0; border-radius: 99px;
     background: rgba(58,47,74,0.1); overflow: hidden;
   }
   #fill { height: 100%; width: 0; background: var(--coral); border-radius: 99px; transition: width 0.4s; }
@@ -151,7 +154,7 @@
   <div id="chooser">
     <p class="kicker">मूर्ति पूजा</p>
     <h1>Living Murti</h1>
-    <p class="lede">One murti of each deity — as in the sanctum. Choose Shiva or the Shivling. Pour from the crown.</p>
+    <p class="lede">One 3D murti of each deity. Choose Shiva or the Shivling. Pour jal from the crown — it runs down the form.</p>
     <div class="grid" id="grid"></div>
     <input type="file" id="fileInput" class="visually-hidden" accept="image/*" tabindex="-1" aria-hidden="true">
   </div>
@@ -174,12 +177,14 @@
     <p id="hint">Drag to walk around the murti</p>
     <div id="hud">
       <p id="mantraHi" title="Tap to chant"></p>
-      <p id="mantraEn"></p>
+      <div id="hudMeta">
+        <p id="mantraEn"></p>
+        <div id="track"><div id="fill"></div></div>
+      </div>
       <div id="caption">
         <p class="hi" id="capHi"></p>
         <p class="en" id="capEn"></p>
       </div>
-      <div id="track"><div id="fill"></div></div>
     </div>
     <div id="thali" aria-label="Puja thali"></div>
     <div id="dock">
@@ -199,19 +204,19 @@
   </div>
 </div>
 <script type="module">
-import { mountMurti, showDeity, playOffer, resize } from "./murti-scene.js";
+import { mountMurti, showDeity, playOffer, resize } from "./murti-scene.js?v=3d3";
 
 const MAIN = [
-  { id: "ganesha", hi: "गणेश", en: "Ganesha", src: "../deities/ganesha.webp", mantra: "ॐ गं गणपतये नमः", mantraEn: "Om Gam Ganapataye Namah" },
-  { id: "shiva", hi: "शिव", en: "Shiva", src: "../deities/shiva.webp", mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya" },
+  { id: "ganesha", hi: "गणेश", en: "Ganesha", src: "../deities/ganesha.webp?v=3d1", mantra: "ॐ गं गणपतये नमः", mantraEn: "Om Gam Ganapataye Namah" },
+  { id: "shiva", hi: "शिव", en: "Shiva", src: "../deities/shiva.webp?v=3d1", mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya" },
   { id: "shivling", hi: "शिवलिंग", en: "Shivling", lingam: true, mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya" },
-  { id: "krishna", hi: "कृष्ण", en: "Krishna", src: "../deities/krishna.webp", mantra: "ॐ नमो भगवते वासुदेवाय", mantraEn: "Om Namo Bhagavate Vasudevaya" },
-  { id: "durga", hi: "दुर्गा", en: "Durga", src: "../deities/durga.webp", mantra: "ॐ दुं दुर्गायै नमः", mantraEn: "Om Dum Durgayai Namah" },
-  { id: "lakshmi", hi: "लक्ष्मी", en: "Lakshmi", src: "../deities/lakshmi.webp", mantra: "ॐ श्रीं महालक्ष्म्यै नमः", mantraEn: "Om Shreem Mahalakshmyai Namah" },
-  { id: "hanuman", hi: "हनुमान", en: "Hanuman", src: "../deities/hanuman.webp", mantra: "ॐ हनुमते नमः", mantraEn: "Om Hanumate Namah" },
-  { id: "saraswati", hi: "सरस्वती", en: "Saraswati", src: "../deities/saraswati.webp", mantra: "ॐ ऐं सरस्वत्यै नमः", mantraEn: "Om Aim Saraswatyai Namah" },
-  { id: "rama", hi: "राम", en: "Rama", src: "../deities/rama.webp", mantra: "ॐ श्री रामाय नमः", mantraEn: "Om Shri Ramaya Namah" },
-  { id: "kali", hi: "काली", en: "Kali", src: "../deities/kali.webp", mantra: "ॐ क्रिं कालीकायै नमः", mantraEn: "Om Krim Kalikayai Namah" },
+  { id: "krishna", hi: "कृष्ण", en: "Krishna", src: "../deities/krishna.webp?v=3d1", mantra: "ॐ नमो भगवते वासुदेवाय", mantraEn: "Om Namo Bhagavate Vasudevaya" },
+  { id: "durga", hi: "दुर्गा", en: "Durga", src: "../deities/durga.webp?v=3d1", mantra: "ॐ दुं दुर्गायै नमः", mantraEn: "Om Dum Durgayai Namah" },
+  { id: "lakshmi", hi: "लक्ष्मी", en: "Lakshmi", src: "../deities/lakshmi.webp?v=3d1", mantra: "ॐ श्रीं महालक्ष्म्यै नमः", mantraEn: "Om Shreem Mahalakshmyai Namah" },
+  { id: "hanuman", hi: "हनुमान", en: "Hanuman", src: "../deities/hanuman.webp?v=3d1", mantra: "ॐ हनुमते नमः", mantraEn: "Om Hanumate Namah" },
+  { id: "saraswati", hi: "सरस्वती", en: "Saraswati", src: "../deities/saraswati.webp?v=3d1", mantra: "ॐ ऐं सरस्वत्यै नमः", mantraEn: "Om Aim Saraswatyai Namah" },
+  { id: "rama", hi: "राम", en: "Rama", src: "../deities/rama.webp?v=3d1", mantra: "ॐ श्री रामाय नमः", mantraEn: "Om Shri Ramaya Namah" },
+  { id: "kali", hi: "काली", en: "Kali", src: "../deities/kali.webp?v=3d1", mantra: "ॐ क्रिं कालीकायै नमः", mantraEn: "Om Krim Kalikayai Namah" },
 ];
 const BASE_STEPS = [
   { id: "jal", hi: "जल", en: "Pour jal on the crown", fx: "water", color: "#7eb7e0" },
@@ -281,6 +286,7 @@ let mounted = false;
 let customUrl = null;
 let shivaAudio = null;
 let STEPS = BASE_STEPS;
+let selectGen = 0;
 
 function tile(p, host, onPick) {
   const b = document.createElement("button");
@@ -371,6 +377,7 @@ if (window.speechSynthesis) {
 }
 
 async function select(p) {
+  const gen = ++selectGen;
   current = p;
   STEPS = stepsFor(p);
   buildThali();
@@ -383,14 +390,20 @@ async function select(p) {
   done.classList.remove("show");
   paint();
   const waking = document.getElementById("waking");
+  const hint = document.getElementById("hint");
+  hint.classList.remove("gone");
   waking.classList.remove("hidden");
   try {
     await ensureScene();
+    if (gen !== selectGen) return;
     await showDeity(p);
+    if (gen !== selectGen) return;
   } finally {
-    waking.classList.add("hidden");
+    if (gen === selectGen) waking.classList.add("hidden");
   }
   chant(p.mantra, p.id);
+  clearTimeout(hint._fade);
+  hint._fade = setTimeout(() => hint.classList.add("gone"), 2600);
 }
 
 function doStep(i, fromChip) {

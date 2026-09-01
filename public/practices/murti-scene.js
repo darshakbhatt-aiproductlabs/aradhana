@@ -17,18 +17,32 @@ let milkPool = null;
 const coats = [];
 const mats = {};
 const _v = new THREE.Vector3();
+let loadGen = 0;
 
 const ANCHORS = {
-  ganesha: { crown: [0.5, 0.93], brow: [0.5, 0.7] },
-  shiva: { crown: [0.5, 0.9], brow: [0.5, 0.62] },
-  krishna: { crown: [0.5, 0.91], brow: [0.5, 0.72] },
-  durga: { crown: [0.5, 0.88], brow: [0.5, 0.62] },
-  lakshmi: { crown: [0.5, 0.91], brow: [0.5, 0.68] },
-  hanuman: { crown: [0.5, 0.9], brow: [0.5, 0.7] },
-  saraswati: { crown: [0.5, 0.9], brow: [0.5, 0.68] },
-  rama: { crown: [0.48, 0.9], brow: [0.48, 0.7] },
-  kali: { crown: [0.5, 0.88], brow: [0.5, 0.62] },
+  ganesha: { crown: [0.5, 0.93], brow: [0.5, 0.62] },
+  shiva: { crown: [0.5, 0.92], brow: [0.5, 0.78] },
+  krishna: { crown: [0.5, 0.93], brow: [0.5, 0.76] },
+  durga: { crown: [0.5, 0.9], brow: [0.5, 0.74] },
+  lakshmi: { crown: [0.5, 0.92], brow: [0.5, 0.72] },
+  hanuman: { crown: [0.5, 0.92], brow: [0.5, 0.78] },
+  saraswati: { crown: [0.5, 0.91], brow: [0.5, 0.74] },
+  rama: { crown: [0.5, 0.93], brow: [0.5, 0.78] },
+  kali: { crown: [0.5, 0.9], brow: [0.5, 0.76] },
   custom: { crown: [0.5, 0.92], brow: [0.5, 0.72] },
+};
+
+const BROW_T = {
+  ganesha: 0.38,
+  shiva: 0.2,
+  krishna: 0.22,
+  durga: 0.2,
+  lakshmi: 0.24,
+  hanuman: 0.2,
+  saraswati: 0.22,
+  rama: 0.2,
+  kali: 0.18,
+  custom: 0.26,
 };
 
 function mat(name, opts) {
@@ -37,7 +51,7 @@ function mat(name, opts) {
 }
 
 function readyMats() {
-  mat("bronze", { color: 0xb07840, metalness: 0.55, roughness: 0.42 });
+  mat("bronze", { color: 0xb07840, metalness: 0.62, roughness: 0.38 });
   mat("gold", { color: 0xc49a4a, metalness: 0.7, roughness: 0.32 });
   mat("stone", { color: 0x3c3e46, metalness: 0.12, roughness: 0.5 });
   mat("marble", { color: 0xeee4d4, metalness: 0.05, roughness: 0.3 });
@@ -135,6 +149,7 @@ function shivling() {
   g.userData.anchors = { crown, forehead: brow, chest: lingam, base: yoni };
   g.userData.coatMesh = lingam;
   g.userData.kind = "lingam";
+  g.userData.deityId = "shivling";
   return g;
 }
 
@@ -149,7 +164,7 @@ function loadImage(url) {
 }
 
 function punchBackground(img) {
-  const maxW = 720;
+  const maxW = 640;
   const scale = Math.min(1, maxW / img.width);
   const w = Math.max(2, Math.round(img.width * scale));
   const h = Math.max(2, Math.round(img.height * scale));
@@ -169,6 +184,7 @@ function punchBackground(img) {
   const bg = [0, 0, 0];
   corners.forEach((p) => { bg[0] += p[0]; bg[1] += p[1]; bg[2] += p[2]; });
   bg[0] /= 4; bg[1] /= 4; bg[2] /= 4;
+  const bgSat = Math.max(bg[0], bg[1], bg[2]) - Math.min(bg[0], bg[1], bg[2]);
 
   const dist = (x, y) => {
     const i = (y * w + x) * 4;
@@ -177,15 +193,21 @@ function punchBackground(img) {
     const db = d[i + 2] - bg[2];
     return Math.sqrt(dr * dr + dg * dg + db * db);
   };
+  const satAt = (x, y) => {
+    const i = (y * w + x) * 4;
+    return Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]);
+  };
 
-  const thresh = 58;
+  const thresh = 74;
   const visited = new Uint8Array(w * h);
   const stack = [];
   const push = (x, y) => {
     if (x < 0 || y < 0 || x >= w || y >= h) return;
     const p = y * w + x;
     if (visited[p]) return;
-    if (dist(x, y) > thresh) return;
+    const di = dist(x, y);
+    if (di > thresh) return;
+    if (satAt(x, y) > bgSat + 42 && di > 26) return;
     visited[p] = 1;
     stack.push(p);
   };
@@ -199,21 +221,115 @@ function punchBackground(img) {
     push(x + 1, y); push(x - 1, y); push(x, y + 1); push(x, y - 1);
   }
 
-  for (let y = 1; y < h - 1; y++) {
-    for (let x = 1; x < w - 1; x++) {
-      const i = (y * w + x) * 4;
-      if (d[i + 3] === 0) continue;
-      let n = 0;
-      if (d[((y) * w + (x - 1)) * 4 + 3] === 0) n++;
-      if (d[((y) * w + (x + 1)) * 4 + 3] === 0) n++;
-      if (d[((y - 1) * w + x) * 4 + 3] === 0) n++;
-      if (d[((y + 1) * w + x) * 4 + 3] === 0) n++;
-      if (n >= 2) d[i + 3] = Math.min(d[i + 3], 90);
-    }
-  }
-
   ctx.putImageData(imgData, 0, 0);
   return { canvas: c, data: imgData, w, h };
+}
+
+function erodeAlpha(imgData, w, h, times) {
+  const d = imgData.data;
+  for (let t = 0; t < times; t++) {
+    const copy = new Uint8ClampedArray(d);
+    for (let y = 1; y < h - 1; y++) {
+      for (let x = 1; x < w - 1; x++) {
+        const i = (y * w + x) * 4 + 3;
+        if (copy[i] === 0) continue;
+        if (
+          copy[(y * w + (x - 1)) * 4 + 3] === 0
+          || copy[(y * w + (x + 1)) * 4 + 3] === 0
+          || copy[((y - 1) * w + x) * 4 + 3] === 0
+          || copy[((y + 1) * w + x) * 4 + 3] === 0
+        ) d[i] = 0;
+      }
+    }
+  }
+}
+
+function traceOutline(imgData, w, h, aMin) {
+  const amin = aMin || 40;
+  const at = (x, y) => {
+    if (x < 0 || y < 0 || x >= w || y >= h) return false;
+    return imgData.data[(y * w + x) * 4 + 3] >= amin;
+  };
+  let sx = -1;
+  let sy = -1;
+  outer: for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (at(x, y)) { sx = x; sy = y; break outer; }
+    }
+  }
+  if (sx < 0) return [];
+  const dirs = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+  const pts = [];
+  let x = sx;
+  let y = sy;
+  let dir = 0;
+  let guard = 0;
+  do {
+    pts.push([x, y]);
+    const startDir = (dir + 6) % 8;
+    let found = false;
+    for (let i = 0; i < 8; i++) {
+      const k = (startDir + i) % 8;
+      const nx = x + dirs[k][0];
+      const ny = y + dirs[k][1];
+      if (at(nx, ny)) { x = nx; y = ny; dir = k; found = true; break; }
+    }
+    if (!found) break;
+    guard += 1;
+  } while ((x !== sx || y !== sy) && guard < w * h);
+  const step = Math.max(1, (pts.length / 140) | 0);
+  const out = [];
+  for (let i = 0; i < pts.length; i += step) out.push(pts[i]);
+  return out;
+}
+
+function makeRim(pts, w, h, width, height, y0, depth) {
+  const toX = (px) => ((px / (w - 1)) - 0.5) * width;
+  const toY = (py) => y0 + (0.5 - py / (h - 1)) * height;
+  const n = pts.length;
+  if (n < 8) return null;
+  const positions = new Float32Array(n * 2 * 3);
+  const indices = [];
+  const zf = depth * 0.5;
+  const zb = -depth * 0.5;
+  for (let i = 0; i < n; i++) {
+    const x = toX(pts[i][0]);
+    const y = toY(pts[i][1]);
+    const o = i * 6;
+    positions[o] = x; positions[o + 1] = y; positions[o + 2] = zf;
+    positions[o + 3] = x; positions[o + 4] = y; positions[o + 5] = zb;
+  }
+  for (let i = 0; i < n; i++) {
+    const a = i * 2;
+    const b = a + 1;
+    const c = ((i + 1) % n) * 2;
+    const d = c + 1;
+    indices.push(a, c, b, b, c, d);
+  }
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+  geo.setIndex(indices);
+  geo.computeVertexNormals();
+  geo.userData.localGeo = true;
+  return geo;
+}
+
+function silhouetteRows(imgData, w, h, aMin) {
+  const rows = [];
+  const data = imgData.data;
+  const amin = aMin || 40;
+  for (let y = 0; y < h; y++) {
+    let minX = -1;
+    let maxX = -1;
+    for (let x = 0; x < w; x++) {
+      if (data[(y * w + x) * 4 + 3] >= amin) {
+        if (minX < 0) minX = x;
+        maxX = x;
+      }
+    }
+    if (minX >= 0) rows.push({ y, minX, maxX, mid: (minX + maxX) * 0.5 });
+  }
+  return rows;
 }
 
 function reliefGeometry(imgData, w, h, width, height) {
@@ -233,60 +349,153 @@ function reliefGeometry(imgData, w, h, width, height) {
     const nx = (u - 0.5) * 2;
     const ny = (v - 0.42) * 2;
     const body = Math.max(0, 1 - (nx * nx * 0.9 + ny * ny * 1.15));
-    const z = a < 18 ? -0.02 : body * 0.2 + lum * 0.06;
+    const z = a < 18 ? -0.02 : body * 0.07 + lum * 0.03;
     pos.setZ(i, z);
   }
   geo.computeVertexNormals();
   return geo;
 }
 
-async function makeRelief(spec) {
+function pathsFromRows(rows, w, h, width, height, y0, id) {
+  const toLocal = (px, py, z) => new THREE.Vector3(
+    ((px / (w - 1)) - 0.5) * width,
+    y0 + (0.5 - py / (h - 1)) * height,
+    z,
+  );
+  const step = Math.max(1, (rows.length / 22) | 0);
+  const left = [];
+  const right = [];
+  const center = [];
+  for (let i = 0; i < rows.length; i += step) {
+    const r = rows[i];
+    left.push(toLocal(r.minX, r.y, 0.14));
+    right.push(toLocal(r.maxX, r.y, 0.14));
+    center.push(toLocal(r.mid, r.y, 0.18));
+  }
+  const last = rows[rows.length - 1];
+  left.push(toLocal(last.minX, last.y, 0.1));
+  right.push(toLocal(last.maxX, last.y, 0.1));
+  center.push(toLocal(last.mid, last.y, 0.12));
+  const crownRow = rows[Math.min(rows.length - 1, (rows.length * 0.03) | 0)];
+  const browT = BROW_T[id] || BROW_T.custom;
+  const browRow = rows[Math.min(rows.length - 1, (rows.length * browT) | 0)];
+  const chestRow = rows[Math.min(rows.length - 1, (rows.length * 0.5) | 0)];
+  return {
+    left,
+    right,
+    center,
+    crownPos: toLocal(crownRow.mid, crownRow.y, 0.22),
+    browPos: toLocal(browRow.mid, browRow.y, 0.24),
+    chestPos: toLocal(chestRow.mid, chestRow.y, 0.18),
+    basePos: toLocal(last.mid, last.y, 0.08),
+  };
+}
+
+function disposeGroup(g) {
+  if (!g) return;
+  g.traverse((c) => {
+    if (c.geometry && c.geometry.userData && c.geometry.userData.localGeo) c.geometry.dispose();
+    if (c.material) {
+      const list = Array.isArray(c.material) ? c.material : [c.material];
+      list.forEach((m) => {
+        if (m.map && m.userData && m.userData.localTex) m.map.dispose();
+        if (m.userData && m.userData.localMat) m.dispose();
+      });
+    }
+  });
+}
+
+async function makeStatue(spec) {
   const g = new THREE.Group();
   g.add(pedestal());
   const img = await loadImage(spec.src);
   const punched = punchBackground(img);
+  erodeAlpha(punched.data, punched.w, punched.h, 3);
+  const pctx = punched.canvas.getContext("2d");
+  pctx.putImageData(punched.data, 0, 0);
+  const rows = silhouetteRows(punched.data, punched.w, punched.h, 40);
+  const outline = traceOutline(punched.data, punched.w, punched.h, 40);
   const tex = new THREE.CanvasTexture(punched.canvas);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = 8;
   tex.needsUpdate = true;
 
   const aspect = punched.w / punched.h;
-  const height = 1.62;
-  const width = Math.min(1.28, height * aspect);
+  const height = 1.66;
+  const width = Math.min(1.32, height * aspect);
+  const y0 = 0.36 + height / 2;
+  const depth = 0.28;
+
+  const rimGeo = makeRim(outline, punched.w, punched.h, width, height, y0, depth);
+  if (rimGeo) {
+    const rim = new THREE.Mesh(rimGeo, mats.bronze);
+    rim.castShadow = true;
+    rim.receiveShadow = true;
+    g.add(rim);
+  }
+
   const geo = reliefGeometry(punched.data, punched.w, punched.h, width, height);
   geo.userData.localGeo = true;
-  const y0 = 0.36 + height / 2;
   const matFront = new THREE.MeshStandardMaterial({
     map: tex,
     transparent: true,
-    alphaTest: 0.14,
-    roughness: 0.48,
-    metalness: 0.08,
+    alphaTest: 0.2,
+    roughness: 0.36,
+    metalness: 0.42,
   });
+  matFront.userData.localMat = true;
+  matFront.userData.localTex = true;
   const front = new THREE.Mesh(geo, matFront);
-  front.position.set(0, y0, 0.02);
+  front.position.set(0, y0, depth * 0.5);
   front.castShadow = true;
   front.receiveShadow = true;
   g.add(front);
 
-  const back = mesh(new THREE.BoxGeometry(width * 0.72, height * 0.78, 0.1), mats.bronze, 0, y0 - 0.04, -0.08);
+  const backGeo = geo.clone();
+  backGeo.userData.localGeo = true;
+  const pos = backGeo.attributes.position;
+  for (let i = 0; i < pos.count; i++) pos.setZ(i, -pos.getZ(i));
+  backGeo.computeVertexNormals();
+  const matBack = new THREE.MeshStandardMaterial({
+    color: 0x8a5a32,
+    alphaMap: tex,
+    transparent: true,
+    alphaTest: 0.2,
+    roughness: 0.48,
+    metalness: 0.5,
+    side: THREE.BackSide,
+  });
+  matBack.userData.localMat = true;
+  const back = new THREE.Mesh(backGeo, matBack);
+  back.position.set(0, y0, -depth * 0.5);
   back.castShadow = true;
   g.add(back);
 
-  const uv = ANCHORS[spec.id] || ANCHORS.custom;
-  const toLocal = (uvxy, z) => dummy(
-    (uvxy[0] - 0.5) * width,
-    y0 + (uvxy[1] - 0.5) * height,
-    z,
-  );
-  const crown = toLocal(uv.crown, 0.22);
-  const brow = toLocal(uv.brow, 0.24);
-  const chest = toLocal([0.5, 0.48], 0.18);
-  const base = toLocal([0.5, 0.12], 0.1);
+  let crown;
+  let brow;
+  let chest;
+  let base;
+  let paths = null;
+  if (rows.length > 8) {
+    const P = pathsFromRows(rows, punched.w, punched.h, width, height, y0, spec.id);
+    paths = { left: P.left, right: P.right, center: P.center };
+    crown = dummy(P.crownPos.x, P.crownPos.y, P.crownPos.z);
+    brow = dummy(P.browPos.x, P.browPos.y, P.browPos.z);
+    chest = dummy(P.chestPos.x, P.chestPos.y, P.chestPos.z);
+    base = dummy(P.basePos.x, P.basePos.y, P.basePos.z);
+  } else {
+    const uv = ANCHORS[spec.id] || ANCHORS.custom;
+    crown = dummy((uv.crown[0] - 0.5) * width, y0 + (uv.crown[1] - 0.5) * height, 0.22);
+    brow = dummy((uv.brow[0] - 0.5) * width, y0 + (uv.brow[1] - 0.5) * height, 0.24);
+    chest = dummy(0, y0, 0.18);
+    base = dummy(0, y0 - height * 0.38, 0.1);
+  }
   g.add(crown, brow, chest, base);
   g.userData.anchors = { crown, forehead: brow, chest, base };
+  g.userData.paths = paths;
   g.userData.coatMesh = front;
-  g.userData.kind = "relief";
+  g.userData.kind = "statue";
+  g.userData.deityId = spec.id;
   return g;
 }
 
@@ -331,8 +540,8 @@ function pour(kind) {
   const brow = worldOf(current.userData.anchors.forehead);
   const chest = worldOf(current.userData.anchors.chest);
   const base = worldOf(current.userData.anchors.base);
-  kalash.position.copy(top).add(new THREE.Vector3(0.1, 0.3, 0.12));
-  kalash.rotation.set(0.15, 0, -0.7);
+  kalash.position.copy(top).add(new THREE.Vector3(0.12, 0.28, 0.14));
+  kalash.rotation.set(0.18, 0, -0.72);
   kalash.visible = true;
   addCoat(kind);
   if (milkPool && kind === "milk") milkPool.material.opacity = 0.72;
@@ -342,17 +551,34 @@ function pour(kind) {
   }
   const isMilk = kind === "milk";
   const colorMat = isMilk ? mats.milk : mats.water;
-  const n = reduced ? 20 : 48;
+  const n = reduced ? 22 : 56;
   const lingam = current.userData.kind === "lingam";
+  const localPaths = current.userData.paths;
+  const worldPaths = localPaths
+    ? {
+      left: localPaths.left.map((p) => current.localToWorld(p.clone())),
+      right: localPaths.right.map((p) => current.localToWorld(p.clone())),
+      center: localPaths.center.map((p) => current.localToWorld(p.clone())),
+    }
+    : null;
   for (let i = 0; i < n; i++) {
     const d = mesh(new THREE.SphereGeometry(isMilk ? 0.022 : 0.016, 8, 8), colorMat);
     d.castShadow = false;
+    let path = null;
+    if (!lingam) {
+      if (worldPaths) {
+        const which = i % 3;
+        path = which === 0 ? worldPaths.center : which === 1 ? worldPaths.left : worldPaths.right;
+      } else {
+        path = [top.clone(), brow.clone(), chest.clone(), base.clone()];
+      }
+    }
     d.userData = {
       ang: Math.random() * Math.PI * 2,
       u: -Math.random() * 0.12,
       speed: 0.55 + Math.random() * 0.35,
       kind: current.userData.kind,
-      path: lingam ? null : [top.clone(), brow.clone(), chest.clone(), base.clone()],
+      path,
     };
     d.position.copy(top);
     fxRoot.add(d);
@@ -475,14 +701,14 @@ function stepDrops(dt) {
       if (y < 0.5) { fxRoot.remove(d); drops.splice(i, 1); }
     } else {
       const path = d.userData.path;
-      if (!path) { fxRoot.remove(d); drops.splice(i, 1); continue; }
+      if (!path || path.length < 2) { fxRoot.remove(d); drops.splice(i, 1); continue; }
       const max = path.length - 1;
-      const t = Math.min(u, max);
+      const t = Math.min(Math.max(u, 0), max);
       const i0 = Math.min(Math.floor(t), max - 1);
       const f = t - i0;
       d.position.lerpVectors(path[i0], path[i0 + 1], f);
-      d.position.x += Math.cos(d.userData.ang) * 0.025 * f;
-      if (u > max + 0.2) { fxRoot.remove(d); drops.splice(i, 1); }
+      d.position.x += Math.cos(d.userData.ang) * 0.012;
+      if (u > max + 0.25) { fxRoot.remove(d); drops.splice(i, 1); }
     }
   }
 }
@@ -608,6 +834,21 @@ function buildSanctum() {
   return g;
 }
 
+function frameStatue(lingam) {
+  if (lingam) {
+    controls.minAzimuthAngle = -Infinity;
+    controls.maxAzimuthAngle = Infinity;
+    controls.target.set(0, 0.78, 0);
+    camera.position.set(0, 1.18, 2.35);
+  } else {
+    controls.minAzimuthAngle = -1.05;
+    controls.maxAzimuthAngle = 1.05;
+    controls.target.set(0, 1.2, 0);
+    camera.position.set(0, 1.3, 2.72);
+  }
+  controls.autoRotate = !reduced;
+}
+
 export function mountMurti(canvas) {
   canvasEl = canvas;
   reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -616,7 +857,7 @@ export function mountMurti(canvas) {
   scene.background = new THREE.Color(0xf3e0cc);
   scene.fog = new THREE.Fog(0xf3e0cc, 6.5, 13);
   camera = new THREE.PerspectiveCamera(34, 1, 0.1, 40);
-  camera.position.set(0, 1.22, 2.7);
+  camera.position.set(0, 1.3, 2.72);
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false, powerPreference: "high-performance" });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.shadowMap.enabled = true;
@@ -674,9 +915,9 @@ export function mountMurti(canvas) {
   controls.maxDistance = 4.2;
   controls.minPolarAngle = Math.PI * 0.32;
   controls.maxPolarAngle = Math.PI * 0.5;
-  controls.target.set(0, 1.05, 0);
+  controls.target.set(0, 1.2, 0);
   controls.autoRotate = !reduced;
-  controls.autoRotateSpeed = 0.35;
+  controls.autoRotateSpeed = 0.55;
   controls.addEventListener("start", () => { controls.autoRotate = false; });
 
   resize();
@@ -687,30 +928,32 @@ export function mountMurti(canvas) {
 }
 
 export async function showDeity(spec) {
+  const gen = ++loadGen;
   clearFx();
   if (current) {
     root.remove(current);
-    current.traverse((c) => {
-      if (c.geometry && c.geometry.userData && c.geometry.userData.localGeo) c.geometry.dispose();
-    });
+    disposeGroup(current);
     current = null;
   }
   const lingam = spec.id === "shivling" || spec.lingam;
-  if (lingam) current = shivling();
-  else current = await makeRelief(spec);
-  root.add(current);
-  if (lingam) {
-    controls.minAzimuthAngle = -Infinity;
-    controls.maxAzimuthAngle = Infinity;
-    controls.target.set(0, 0.72, 0);
-    camera.position.set(0, 1.12, 2.35);
-  } else {
-    controls.minAzimuthAngle = -0.55;
-    controls.maxAzimuthAngle = 0.55;
-    controls.target.set(0, 1.05, 0);
-    camera.position.set(0, 1.2, 2.55);
+  let next;
+  try {
+    next = lingam ? shivling() : await makeStatue(spec);
+  } catch (err) {
+    if (gen !== loadGen) return;
+    throw err;
   }
-  controls.autoRotate = !reduced;
+  if (gen !== loadGen) {
+    disposeGroup(next);
+    return;
+  }
+  if (next.userData.deityId && spec.id && next.userData.deityId !== spec.id) {
+    disposeGroup(next);
+    return;
+  }
+  current = next;
+  root.add(current);
+  frameStatue(lingam);
 }
 
 export function playOffer(kind) {

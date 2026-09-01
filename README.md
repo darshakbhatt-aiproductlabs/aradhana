@@ -8,7 +8,7 @@ Live: [darshakbhatt-aiproductlabs.github.io/aradhana](https://darshakbhatt-aipro
 | --- | --- |
 | **Japa** | A soft mala. Tap a bead. Keep the Name. ← Setup and Home are always one tap away. |
 | **Vāṇī** | A concert screen for recitation. Spotlight, karaoke, ticker, lower-third, mandala, caption, night, stage, temple TV. Dim the deity. Mirror or project. |
-| **Murti** | A 3D bronze murti in a sanctum. Choose **Shiva** or the **Shivling**. Abhishekam pours from the crown: jal, milk, sandal, tripundra, bilva, dhoop, aarti, pranam. |
+| **Murti** | A 3D bronze murti in a sanctum. Choose **Shiva** or the **Shivling**. Abhishekam pours from the crown and runs down the form: jal, milk, sandal, tripundra, bilva, dhoop, aarti, pranam. |
 
 No account. Preferences stay on the device.
 
