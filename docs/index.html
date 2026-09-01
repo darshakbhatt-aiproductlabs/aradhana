@@ -22,6 +22,23 @@
   html{-webkit-font-smoothing:antialiased;}
   #app{display:flex;flex-direction:column;height:100dvh;}
   main{flex:1;min-height:0;position:relative;overflow:hidden;}
+  #topnav{
+    display:none;position:relative;z-index:30;height:48px;flex-shrink:0;
+    align-items:center;border-bottom:1px solid rgb(255 122 92 / .22);
+    background:rgba(255,253,251,.95);padding:0 .25rem;
+  }
+  #topnav.show{display:flex;}
+  #topnav a{
+    position:relative;z-index:1;
+    display:flex;align-items:center;gap:2px;min-height:40px;padding:0 .75rem;
+    color:var(--deep);text-decoration:none;font-size:.875rem;font-weight:800;
+    background:var(--paper);border-radius:999px;
+    box-shadow:0 0 0 2px rgb(255 184 160 / .35), 0 10px 28px -12px rgb(255 122 92 / .28);
+  }
+  #toptitle{
+    position:absolute;left:0;right:0;text-align:center;
+    font-family:var(--display);font-weight:800;pointer-events:none;
+  }
   .view{position:absolute;inset:0;display:none;}
   .view.active{display:block;}
   iframe{width:100%;height:100%;border:0;background:transparent;}
@@ -51,7 +68,7 @@
   }
   nav a{
     display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
-    min-height:44px;color:var(--mist);text-decoration:none;font-size:10px;font-weight:800;letter-spacing:.04em;
+    min-height:48px;color:var(--mist);text-decoration:none;font-size:10px;font-weight:800;letter-spacing:.04em;
   }
   nav a.active{color:var(--deep);}
   nav svg{width:20px;height:20px;}
@@ -59,6 +76,10 @@
 </head>
 <body>
 <div id="app">
+  <header id="topnav">
+    <a href="#home">← Home</a>
+    <span id="toptitle"></span>
+  </header>
   <main>
     <section id="home" class="view active">
       <div class="inner">
@@ -82,13 +103,13 @@
           <div class="card-top"><span class="no">02</span><span class="hi">वाणी</span></div>
           <p class="en">Vāṇī</p>
           <p class="title">Divine screen</p>
-          <p class="blurb">Hymns on a sacred stage — word by word, as if the deity is singing to you.</p>
+          <p class="blurb">A concert screen for the Name — lyric cuts, frames, dim the backdrop, project it.</p>
         </a>
         <a class="card" href="#murti">
           <div class="card-top"><span class="no">03</span><span class="hi">मूर्ति</span></div>
           <p class="en">Murti</p>
           <p class="title">Living puja</p>
-          <p class="blurb">Choose a form, hear their mantra, offer jal to aarti — a puja of the mind.</p>
+          <p class="blurb">Bronze murti in the round. Choose Shiva or the Shivling. Pour from the crown.</p>
         </a>
         <p class="foot">Sit. Breathe. Begin.</p>
       </div>
@@ -119,15 +140,34 @@
 <script>
 (function(){
   const routes = ['home','japa','path','murti'];
+  const titles = { japa: 'Japa', path: 'Vāṇī', murti: 'Murti' };
   function show(id){
     if(!routes.includes(id)) id = 'home';
     document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id===id));
     document.querySelectorAll('nav a').forEach(a => a.classList.toggle('active', a.dataset.route===id));
+    const top = document.getElementById('topnav');
+    top.classList.toggle('show', id !== 'home');
+    document.getElementById('toptitle').textContent = titles[id] || '';
     const view = document.getElementById(id);
     const frame = view && view.querySelector('iframe[data-src]');
     if(frame && !frame.getAttribute('src')) frame.setAttribute('src', frame.getAttribute('data-src'));
   }
+  function pingRoot(id){
+    const view = document.getElementById(id);
+    const frame = view && view.querySelector('iframe');
+    if(frame && frame.contentWindow) frame.contentWindow.postMessage({ type: 'aradhana-root' }, '*');
+  }
   function fromHash(){ show((location.hash || '#home').replace('#','') || 'home'); }
+  document.querySelectorAll('nav a').forEach((a) => {
+    a.addEventListener('click', (e) => {
+      const id = a.dataset.route;
+      const cur = (location.hash || '#home').replace('#','') || 'home';
+      if(id && id === cur && id !== 'home'){
+        e.preventDefault();
+        pingRoot(id);
+      }
+    });
+  });
   window.addEventListener('hashchange', fromHash);
   fromHash();
 })();

@@ -18,7 +18,7 @@ const PRACTICES = [
     hi: "वाणी",
     en: "Vāṇī",
     title: "Divine screen",
-    blurb: "Hymns on a sacred stage — word by word, as if the deity is singing to you.",
+    blurb: "A concert screen for the Name — lyric cuts, frames, dim the backdrop, project it.",
   },
   {
     to: "/murti",
@@ -26,7 +26,7 @@ const PRACTICES = [
     hi: "मूर्ति",
     en: "Murti",
     title: "Living puja",
-    blurb: "Choose a form, hear their mantra, offer jal to aarti — a puja of the mind.",
+    blurb: "Bronze murti in the round. Choose Shiva or the Shivling. Pour from the crown.",
   },
 ] as const;
 

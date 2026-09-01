@@ -28,14 +28,14 @@
 
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{
-    margin:0; padding:0; height:100%;
+    margin:0; padding:0; height:100%; width:100%;
     font-family: var(--ui-font);
     color: var(--ink);
     background: linear-gradient(165deg, var(--bg1), var(--bg2) 45%, var(--bg3));
     overflow: hidden;
     transition: background 0.45s ease;
   }
-  #app{ position:relative; width:100vw; height:100vh; height:100dvh; overflow:hidden; }
+  #app{ position:relative; width:100%; height:100%; overflow:hidden; }
 
   .view{
     position:absolute; inset:0;
@@ -205,6 +205,7 @@
     box-shadow:0 2px 9px color-mix(in srgb, var(--accent) 9%, transparent);
   }
   .pill-btn:hover{ border-color:var(--accent); color:var(--accent-deep); }
+  .back-pill{ color:var(--accent-deep); font-weight:800; padding-left:8px; }
   .visually-hidden{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
 
   #styleBar{
@@ -759,11 +760,12 @@
   #speedValue{ font-size:11.5px; font-weight:700; color:var(--accent-deep); min-width:26px; text-align:right; }
   .cin-spacer{ flex:1; }
 
-  body.cinematic-active #topbar,
   body.cinematic-active #styleBar,
   body.cinematic-active #controls,
   body.cinematic-active #emptyHint,
   body.cinematic-active #musicStatus{ opacity:0; pointer-events:none; }
+  body.cinematic-active #topbar{ opacity:1; pointer-events:none; }
+  body.cinematic-active #topbar #settingsBtn{ pointer-events:auto; opacity:1; }
   body.cinematic-active #malaWrap{
     --ring-size: min(88vw, 62vh, 480px);
     bottom: max(36px, var(--safe-bot));
@@ -772,7 +774,6 @@
   #malaWrap.dissolve{ opacity:0; filter:blur(7px); pointer-events:none; }
 
   /* Focus / Clean mode – hide trays for full-screen japa */
-  body.focus-mode #topbar,
   body.focus-mode #styleBar,
   body.focus-mode #controls,
   body.focus-mode #emptyHint,
@@ -780,6 +781,8 @@
     opacity: 0;
     pointer-events: none;
   }
+  body.focus-mode #topbar{ opacity: 1; pointer-events: none; }
+  body.focus-mode #topbar #settingsBtn{ pointer-events: auto; opacity: 1; }
   body.focus-mode #malaWrap{
     bottom: max(28px, var(--safe-bot));
   }
@@ -1124,9 +1127,11 @@
     <div id="topbar">
       <!-- All customize options left-aligned; tiny arrow stays right -->
       <div class="top-left">
+        <button type="button" class="pill-btn back-pill" id="settingsBtn" aria-label="Back to setup">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+          Setup
+        </button>
         <button type="button" class="pill-btn" id="addBackdropBtn">Photo</button>
-        <input type="file" id="fileInput" class="visually-hidden" accept="image/*,video/*" multiple>
-        <button type="button" class="pill-btn" id="settingsBtn">Style</button>
         <button type="button" class="pill-btn" id="addMusicBtn">Music</button>
         <input type="file" id="musicInput" class="visually-hidden" accept="audio/*">
         <button type="button" class="pill-btn" id="musicMuteBtn" style="display:none">Play</button>
@@ -1397,10 +1402,9 @@
   });
 
   // ---------- View switch ----------
-  function showView(name){
+  function showView(name, viaHash){
     viewSetup.classList.toggle('active', name==='setup');
     viewJapa.classList.toggle('active', name==='japa');
-    // Always leave focus mode when switching views
     document.body.classList.remove('focus-mode');
     if(focusToggle){ focusToggle.textContent = '▲'; focusToggle.title = 'Hide controls'; }
     if(name==='japa'){
@@ -1411,11 +1415,14 @@
       }
       setTimeout(layoutBeads, 30);
     } else {
-      // sync current mantra back to setup field
       const from = (currentMode === 'scoreboard' && sbMantra)
         ? (sbMantra.textContent||'').trim()
         : (mantraLabel.textContent||'').trim();
       if(from) setupMantra.value = from;
+    }
+    if(!viaHash){
+      const h = name==='japa' ? '#play' : '#setup';
+      if(location.hash !== h) history.pushState({ aradhana: name }, '', h);
     }
   }
   startBtn.addEventListener('click', ()=> showView('japa'));
@@ -1424,8 +1431,22 @@
       ? (sbMantra.textContent||'').trim()
       : (mantraLabel.textContent||'').trim();
     setupMantra.value = from;
-    showView('setup');
+    if(location.hash === '#play' && history.state && history.state.aradhana === 'japa'){
+      history.back();
+    } else {
+      showView('setup');
+    }
   });
+  window.addEventListener('popstate', ()=>{
+    const name = location.hash === '#play' ? 'japa' : 'setup';
+    showView(name, true);
+  });
+  window.addEventListener('message', (e)=>{
+    if(e.data && e.data.type === 'aradhana-root'){
+      showView('setup');
+    }
+  });
+  if(location.hash === '#play') showView('japa', true);
 
   // ---------- Beads ----------
   let beads = [];
