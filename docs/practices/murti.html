@@ -23,7 +23,7 @@
     position: absolute; inset: 0; z-index: 30; overflow-y: auto;
     padding: var(--safe-top) 16px 12px;
   }
-  #chooser.hidden, #variants.hidden { display: none; }
+  #chooser.hidden, #variants.hidden, #waking.hidden { display: none; }
   h1 {
     font-family: var(--dev); font-size: 28px; font-weight: 800; text-align: center;
     margin: 4px 0 6px; color: var(--coral-deep);
@@ -75,7 +75,7 @@
     font-size: 11px; font-weight: 700; color: var(--mist); pointer-events: none; z-index: 4;
   }
   #hud {
-    position: absolute; left: 0; right: 0; bottom: 118px;
+    position: absolute; left: 0; right: 0; top: 32px;
     text-align: center; z-index: 6; padding: 0 16px; pointer-events: none;
   }
   #mantraHi {
@@ -138,6 +138,12 @@
   }
   #done.show { display: flex; }
   #done .card { max-width: 340px; text-align: center; }
+  #waking {
+    position: absolute; inset: 0; z-index: 35;
+    display: flex; align-items: center; justify-content: center;
+    background: rgba(255,246,232,0.55); backdrop-filter: blur(6px);
+  }
+  #waking.hidden { display: none; }
 </style>
 </head>
 <body>
@@ -145,7 +151,7 @@
   <div id="chooser">
     <p class="kicker">मूर्ति पूजा</p>
     <h1>Living Murti</h1>
-    <p class="lede">Choose Shiva or the Shivling — then pour from the crown, as in a real abhishekam.</p>
+    <p class="lede">One murti of each deity — as in the sanctum. Choose Shiva or the Shivling. Pour from the crown.</p>
     <div class="grid" id="grid"></div>
     <input type="file" id="fileInput" class="visually-hidden" accept="image/*" tabindex="-1" aria-hidden="true">
   </div>
@@ -154,8 +160,13 @@
     <button type="button" class="back" id="varBack">All deities</button>
     <p class="kicker">शिव</p>
     <h1>Choose a form</h1>
-    <p class="lede">Each form keeps ॐ नमः शिवाय, unless the form has its own name.</p>
     <div class="grid" id="varGrid"></div>
+  </div>
+  <div id="waking" class="hidden">
+    <div class="card" style="margin:auto;text-align:center;">
+      <p class="kicker">दर्शन</p>
+      <p class="lede" style="margin-bottom:0;">The murti is taking form…</p>
+    </div>
   </div>
 
   <div id="stage">
@@ -192,7 +203,7 @@ import { mountMurti, showDeity, playOffer, resize } from "./murti-scene.js";
 
 const MAIN = [
   { id: "ganesha", hi: "गणेश", en: "Ganesha", src: "../deities/ganesha.webp", mantra: "ॐ गं गणपतये नमः", mantraEn: "Om Gam Ganapataye Namah" },
-  { id: "shiva", hi: "शिव", en: "Shiva", src: "../deities/shiva.webp", mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya", forms: true },
+  { id: "shiva", hi: "शिव", en: "Shiva", src: "../deities/shiva.webp", mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya" },
   { id: "shivling", hi: "शिवलिंग", en: "Shivling", lingam: true, mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya" },
   { id: "krishna", hi: "कृष्ण", en: "Krishna", src: "../deities/krishna.webp", mantra: "ॐ नमो भगवते वासुदेवाय", mantraEn: "Om Namo Bhagavate Vasudevaya" },
   { id: "durga", hi: "दुर्गा", en: "Durga", src: "../deities/durga.webp", mantra: "ॐ दुं दुर्गायै नमः", mantraEn: "Om Dum Durgayai Namah" },
@@ -201,18 +212,6 @@ const MAIN = [
   { id: "saraswati", hi: "सरस्वती", en: "Saraswati", src: "../deities/saraswati.webp", mantra: "ॐ ऐं सरस्वत्यै नमः", mantraEn: "Om Aim Saraswatyai Namah" },
   { id: "rama", hi: "राम", en: "Rama", src: "../deities/rama.webp", mantra: "ॐ श्री रामाय नमः", mantraEn: "Om Shri Ramaya Namah" },
   { id: "kali", hi: "काली", en: "Kali", src: "../deities/kali.webp", mantra: "ॐ क्रिं कालीकायै नमः", mantraEn: "Om Krim Kalikayai Namah" },
-];
-const SHIVA_FORMS = [
-  { id: "shiva", hi: "शिव", en: "Shiva", src: "../deities/shiva.webp", mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya" },
-  { id: "shivling", hi: "शिवलिंग", en: "Shivling", lingam: true, mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya" },
-  { id: "meditating", hi: "ध्यानस्थ", en: "Meditating", src: "../deities/shiva-meditating.webp", mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya" },
-  { id: "nataraj", hi: "नटराज", en: "Nataraj", src: "../deities/shiva-nataraj.webp", mantra: "ॐ नटराजाय नमः", mantraEn: "Om Natarajaya Namah" },
-  { id: "neelkanth", hi: "नीलकंठ", en: "Neelkanth", src: "../deities/shiva-neelkanth.webp", mantra: "ॐ नीलकण्ठाय नमः", mantraEn: "Om Neelakanthaya Namah" },
-  { id: "chandrashekhar", hi: "चन्द्रशेखर", en: "Chandrashekhar", src: "../deities/shiva-chandrashekhar.webp", mantra: "ॐ चन्द्रशेखराय नमः", mantraEn: "Om Chandrashekharaya Namah" },
-  { id: "gangadhar", hi: "गंगाधर", en: "Gangadhar", src: "../deities/shiva-gangadhar.webp", mantra: "ॐ गंगाधराय नमः", mantraEn: "Om Gangadharaya Namah" },
-  { id: "ardhanari", hi: "अर्धनारेश्वर", en: "Ardhanarishvara", src: "../deities/shiva-ardhnareshwar.webp", mantra: "ॐ अर्धनारीश्वराय नमः", mantraEn: "Om Ardhanarishwaraya Namah" },
-  { id: "bhairav", hi: "कालभैरव", en: "Kaal Bhairav", src: "../deities/shiva-kaalbhairav.webp", mantra: "ॐ भैरवाय नमः", mantraEn: "Om Bhairavaya Namah" },
-  { id: "shivyogi", hi: "शिव योगी", en: "Shiva Yogi", src: "../deities/shiva-shivyogi.webp", mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya" },
 ];
 const BASE_STEPS = [
   { id: "jal", hi: "जल", en: "Pour jal on the crown", fx: "water", color: "#7eb7e0" },
@@ -246,7 +245,17 @@ const GANESHA_STEPS = [
 ];
 function stepsFor(p) {
   if (!p) return BASE_STEPS;
-  if (p.id === "shivling" || p.lingam || p.id === "shiva" || p.id === "meditating" || p.id === "nataraj" || p.id === "neelkanth" || p.id === "chandrashekhar" || p.id === "gangadhar" || p.id === "ardhanari" || p.id === "bhairav" || p.id === "shivyogi" || p.id === "abhaya") return SHIVA_STEPS;
+  if (p.id === "shivling" || p.lingam) return SHIVA_STEPS;
+  if (p.id === "shiva") return [
+    { id: "jal", hi: "जल", en: "Pour jal on the crown", fx: "water", color: "#7eb7e0" },
+    { id: "milk", hi: "दुग्ध", en: "Pour milk on the crown", fx: "milk", color: "#f4efe4" },
+    { id: "chandan", hi: "चन्दन", en: "Sandal on the brow", fx: "chandan", color: "#e2c48a" },
+    { id: "tilak", hi: "त्रिपुण्ड्र", en: "Tripundra on the forehead", fx: "tilak", color: "#c4452d" },
+    { id: "flowers", hi: "बिल्व", en: "Bilva leaves on the head", fx: "bilva", color: "#6a9a4a" },
+    { id: "dhoop", hi: "धूप", en: "Offer incense", fx: "dhoop", color: "#c4b8a8" },
+    { id: "aarti", hi: "आरती", en: "Circle the lamp", fx: "aarti", color: "#f0b040" },
+    { id: "pranam", hi: "प्रणाम", en: "Bow to the murti", fx: "pranam", color: "#ff7a5c" },
+  ];
   if (p.id === "ganesha") return GANESHA_STEPS;
   return BASE_STEPS;
 }
@@ -289,16 +298,9 @@ function tile(p, host, onPick) {
   host.appendChild(b);
 }
 
-MAIN.forEach((p) => tile(p, grid, (item) => {
-  if (item.forms) { chooser.classList.add("hidden"); variants.classList.remove("hidden"); }
-  else select(item);
-}));
+MAIN.forEach((p) => tile(p, grid, select));
 tile({ id: "custom", hi: "इष्ट", en: "Your image" }, grid, () => {
   fileInput.value = ""; fileInput.click();
-});
-SHIVA_FORMS.forEach((p) => tile(p, varGrid, select));
-document.getElementById("varBack").addEventListener("click", () => {
-  variants.classList.add("hidden"); chooser.classList.remove("hidden");
 });
 fileInput.addEventListener("change", (e) => {
   const f = e.target.files && e.target.files[0];
@@ -380,8 +382,14 @@ async function select(p) {
   variants.classList.add("hidden");
   done.classList.remove("show");
   paint();
-  await ensureScene();
-  showDeity(p);
+  const waking = document.getElementById("waking");
+  waking.classList.remove("hidden");
+  try {
+    await ensureScene();
+    await showDeity(p);
+  } finally {
+    waking.classList.add("hidden");
+  }
   chant(p.mantra, p.id);
 }
 
