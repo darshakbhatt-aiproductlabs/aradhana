@@ -21,49 +21,43 @@
 
   #chooser, #variants {
     position: absolute; inset: 0; z-index: 30; overflow-y: auto;
-    padding: var(--safe-top) 16px 12px;
+    padding: var(--safe-top) 16px 28px;
   }
   #chooser.hidden, #variants.hidden, #waking.hidden { display: none; }
   h1 {
     font-family: var(--dev); font-size: 28px; font-weight: 800; text-align: center;
     margin: 4px 0 6px; color: var(--coral-deep);
   }
+  .voice {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    margin: 0 auto 14px;
+  }
+  .voice .lbl {
+    font-size: 11px; font-weight: 800; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--mist);
+  }
+  .vbtn {
+    font-family: var(--ui); font-size: 13px; font-weight: 800;
+    padding: 8px 14px; border-radius: 999px; border: var(--border);
+    background: rgba(255,253,251,0.92); color: var(--ink);
+  }
+  .vbtn.on { background: var(--coral); color: #fff; border-color: transparent; }
+
   .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 520px; margin: 0 auto; width: 100%; }
   .tile {
     position: relative; aspect-ratio: 2/3; border-radius: 16px; overflow: hidden; padding: 0;
-    border: var(--border); background: #fff; box-shadow: var(--shadow); color: inherit;
+    border: var(--border); background: #fff6e8; box-shadow: var(--shadow); color: inherit;
   }
   .tile:active { transform: scale(0.96); }
-  .tile img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
+  .tile img { width: 100%; height: 100%; object-fit: contain; object-position: center 58%; display: block; }
   .tile .cap {
     position: absolute; left: 0; right: 0; bottom: 0; padding: 22px 6px 8px; text-align: center;
     background: linear-gradient(to top, rgba(58,47,74,0.72), transparent); color: #fff;
   }
   .tile .cap .hi { display: block; font-family: var(--dev); font-size: 13px; font-weight: 800; }
   .tile .cap .en { display: block; font-size: 10px; font-weight: 700; opacity: 0.9; }
-  .upload-tile, .lingam-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; }
-  .upload-tile { border-style: dashed; background: rgba(255,255,255,0.65); }
+  .upload-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; border-style: dashed; background: rgba(255,255,255,0.65); }
   .upload-tile .plus { font-family: var(--dev); font-size: 28px; color: var(--coral); line-height: 1; }
-  .lingam-tile { background: linear-gradient(180deg, #fff6e8, #efe4d2); }
-  .lingam-art {
-    width: 42px; height: 70px; position: relative;
-  }
-  .lingam-art::before {
-    content: ""; position: absolute; left: 50%; bottom: 8px; width: 36px; height: 12px;
-    transform: translateX(-50%); border-radius: 40%; background: #e9dcc8;
-    box-shadow: 0 0 0 2px #d4c4aa;
-  }
-  .lingam-art::after {
-    content: ""; position: absolute; left: 50%; bottom: 16px; width: 16px; height: 42px;
-    transform: translateX(-50%); border-radius: 8px 8px 4px 4px;
-    background: linear-gradient(180deg, #4a4e58, #2e3138);
-  }
-  .back {
-    display: inline-flex; align-items: center; gap: 4px;
-    font-size: 13px; font-weight: 800; color: var(--coral-deep);
-    background: rgba(255,253,251,0.9); border: var(--border); border-radius: 999px;
-    padding: 8px 14px; margin: 4px 0 8px;
-  }
 
   #stage { position: absolute; inset: 0; overflow: hidden; }
   #view3d {
@@ -82,13 +76,13 @@
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
   }
   #mantraHi {
-    font-family: var(--dev); font-weight: 800; font-size: clamp(13px, 3.4vw, 16px);
+    font-family: var(--dev); font-weight: 800; font-size: clamp(12px, 3.2vw, 15px);
     color: var(--coral-deep); margin: 0; pointer-events: auto; cursor: pointer;
     padding: 6px 12px; border-radius: 999px; line-height: 1.2;
     background: rgba(255,253,251,0.94); border: var(--border); display: inline-block;
-    box-shadow: var(--shadow); max-width: 68%;
+    box-shadow: var(--shadow); max-width: 62%;
   }
-  #hudMeta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; min-width: 72px; }
+  #hudMeta { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; pointer-events: auto; }
   #mantraEn { font-size: 10px; font-weight: 700; color: var(--mist); margin: 0; text-align: right; }
   #caption { display: none; }
   #track {
@@ -96,6 +90,8 @@
     background: rgba(58,47,74,0.1); overflow: hidden;
   }
   #fill { height: 100%; width: 0; background: var(--coral); border-radius: 99px; transition: width 0.4s; }
+  #voiceStage { display: flex; gap: 4px; }
+  #voiceStage .vbtn { padding: 5px 10px; font-size: 11px; }
 
   #thali {
     position: absolute; left: 0; right: 0; bottom: 58px; z-index: 8;
@@ -154,17 +150,17 @@
   <div id="chooser">
     <p class="kicker">मूर्ति पूजा</p>
     <h1>Living Murti</h1>
-    <p class="lede">One 3D murti of each deity. Choose Shiva or the Shivling. Pour jal from the crown — it runs down the form.</p>
+    <p class="lede">Your bronze murtis. Choose one. Pour from the crown — jal runs the form. Send more gods any time.</p>
+    <div class="voice" role="group" aria-label="Voice">
+      <span class="lbl">वाणी</span>
+      <button type="button" class="vbtn" data-voice="male">Male</button>
+      <button type="button" class="vbtn" data-voice="female">Female</button>
+    </div>
     <div class="grid" id="grid"></div>
     <input type="file" id="fileInput" class="visually-hidden" accept="image/*" tabindex="-1" aria-hidden="true">
   </div>
 
-  <div id="variants" class="hidden">
-    <button type="button" class="back" id="varBack">All deities</button>
-    <p class="kicker">शिव</p>
-    <h1>Choose a form</h1>
-    <div class="grid" id="varGrid"></div>
-  </div>
+  <div id="variants" class="hidden"></div>
   <div id="waking" class="hidden">
     <div class="card" style="margin:auto;text-align:center;">
       <p class="kicker">दर्शन</p>
@@ -178,6 +174,10 @@
     <div id="hud">
       <p id="mantraHi" title="Tap to chant"></p>
       <div id="hudMeta">
+        <div id="voiceStage" role="group" aria-label="Voice">
+          <button type="button" class="vbtn" data-voice="male">Male</button>
+          <button type="button" class="vbtn" data-voice="female">Female</button>
+        </div>
         <p id="mantraEn"></p>
         <div id="track"><div id="fill"></div></div>
       </div>
@@ -204,71 +204,53 @@
   </div>
 </div>
 <script type="module">
-import { mountMurti, showDeity, playOffer, resize } from "./murti-scene.js?v=3d3";
+import { mountMurti, showDeity, playOffer, resize } from "./murti-scene.js?v=u1";
 
-const MAIN = [
-  { id: "ganesha", hi: "गणेश", en: "Ganesha", src: "../deities/ganesha.webp?v=3d1", mantra: "ॐ गं गणपतये नमः", mantraEn: "Om Gam Ganapataye Namah" },
-  { id: "shiva", hi: "शिव", en: "Shiva", src: "../deities/shiva.webp?v=3d1", mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya" },
-  { id: "shivling", hi: "शिवलिंग", en: "Shivling", lingam: true, mantra: "ॐ नमः शिवाय", mantraEn: "Om Namah Shivaya" },
-  { id: "krishna", hi: "कृष्ण", en: "Krishna", src: "../deities/krishna.webp?v=3d1", mantra: "ॐ नमो भगवते वासुदेवाय", mantraEn: "Om Namo Bhagavate Vasudevaya" },
-  { id: "durga", hi: "दुर्गा", en: "Durga", src: "../deities/durga.webp?v=3d1", mantra: "ॐ दुं दुर्गायै नमः", mantraEn: "Om Dum Durgayai Namah" },
-  { id: "lakshmi", hi: "लक्ष्मी", en: "Lakshmi", src: "../deities/lakshmi.webp?v=3d1", mantra: "ॐ श्रीं महालक्ष्म्यै नमः", mantraEn: "Om Shreem Mahalakshmyai Namah" },
-  { id: "hanuman", hi: "हनुमान", en: "Hanuman", src: "../deities/hanuman.webp?v=3d1", mantra: "ॐ हनुमते नमः", mantraEn: "Om Hanumate Namah" },
-  { id: "saraswati", hi: "सरस्वती", en: "Saraswati", src: "../deities/saraswati.webp?v=3d1", mantra: "ॐ ऐं सरस्वत्यै नमः", mantraEn: "Om Aim Saraswatyai Namah" },
-  { id: "rama", hi: "राम", en: "Rama", src: "../deities/rama.webp?v=3d1", mantra: "ॐ श्री रामाय नमः", mantraEn: "Om Shri Ramaya Namah" },
-  { id: "kali", hi: "काली", en: "Kali", src: "../deities/kali.webp?v=3d1", mantra: "ॐ क्रिं कालीकायै नमः", mantraEn: "Om Krim Kalikayai Namah" },
-];
-const BASE_STEPS = [
-  { id: "jal", hi: "जल", en: "Pour jal on the crown", fx: "water", color: "#7eb7e0" },
-  { id: "milk", hi: "दुग्ध", en: "Pour milk on the crown", fx: "milk", color: "#f4efe4" },
-  { id: "chandan", hi: "चन्दन", en: "Sandal paste from the brow", fx: "chandan", color: "#e2c48a" },
-  { id: "tilak", hi: "तिलक", en: "Tilak on the forehead", fx: "tilak", color: "#c4452d" },
-  { id: "flowers", hi: "पुष्प", en: "Flowers on the head", fx: "flowers", color: "#f2b7a0" },
-  { id: "dhoop", hi: "धूप", en: "Offer incense", fx: "dhoop", color: "#c4b8a8" },
-  { id: "aarti", hi: "आरती", en: "Circle the lamp", fx: "aarti", color: "#f0b040" },
-  { id: "pranam", hi: "प्रणाम", en: "Bow to the murti", fx: "pranam", color: "#ff7a5c" },
-];
-const SHIVA_STEPS = [
-  { id: "jal", hi: "जल", en: "Pour jal on the crown", fx: "water", color: "#7eb7e0" },
-  { id: "milk", hi: "दुग्ध", en: "Pour milk on the crown", fx: "milk", color: "#f4efe4" },
-  { id: "chandan", hi: "चन्दन", en: "Sandal on the lingam", fx: "chandan", color: "#e2c48a" },
-  { id: "tilak", hi: "त्रिपुण्ड्र", en: "Tripundra on the stone", fx: "tilak", color: "#c4452d" },
-  { id: "flowers", hi: "बिल्व", en: "Bilva leaves on the top", fx: "bilva", color: "#6a9a4a" },
-  { id: "dhoop", hi: "धूप", en: "Offer incense", fx: "dhoop", color: "#c4b8a8" },
-  { id: "aarti", hi: "आरती", en: "Circle the lamp", fx: "aarti", color: "#f0b040" },
-  { id: "pranam", hi: "प्रणाम", en: "Bow to the murti", fx: "pranam", color: "#ff7a5c" },
-];
-const GANESHA_STEPS = [
-  { id: "jal", hi: "जल", en: "Pour jal on the crown", fx: "water", color: "#7eb7e0" },
-  { id: "milk", hi: "दुग्ध", en: "Pour milk on the crown", fx: "milk", color: "#f4efe4" },
-  { id: "chandan", hi: "चन्दन", en: "Sandal on the brow", fx: "chandan", color: "#e2c48a" },
-  { id: "tilak", hi: "तिलक", en: "Tilak on the forehead", fx: "tilak", color: "#c4452d" },
-  { id: "flowers", hi: "दूर्वा", en: "Durva on the crown", fx: "bilva", color: "#6a9a4a" },
-  { id: "dhoop", hi: "धूप", en: "Offer incense", fx: "dhoop", color: "#c4b8a8" },
-  { id: "aarti", hi: "आरती", en: "Circle the lamp", fx: "aarti", color: "#f0b040" },
-  { id: "pranam", hi: "प्रणाम", en: "Bow to the murti", fx: "pranam", color: "#ff7a5c" },
-];
+const STEP = {
+  jal: { id: "jal", hi: "जल", en: "Pour jal on the crown", fx: "water", color: "#7eb7e0" },
+  milk: { id: "milk", hi: "दुग्ध", en: "Pour milk on the crown", fx: "milk", color: "#f4efe4" },
+  ghee: { id: "ghee", hi: "घृत", en: "Pour ghee on the crown", fx: "milk", color: "#f0d78c" },
+  oil: { id: "oil", hi: "तैल", en: "Offer sesame oil", fx: "oil", color: "#6b4a1e" },
+  chandan: { id: "chandan", hi: "चन्दन", en: "Sandal on the brow", fx: "chandan", color: "#e2c48a" },
+  tilak: { id: "tilak", hi: "तिलक", en: "Tilak on the forehead", fx: "tilak", color: "#c4452d" },
+  tripundra: { id: "tilak", hi: "त्रिपुण्ड्र", en: "Tripundra on the forehead", fx: "tilak", color: "#c4452d" },
+  sindoor: { id: "tilak", hi: "सिन्दूर", en: "Sindoor on the brow", fx: "tilak", color: "#c4452d" },
+  flowers: { id: "flowers", hi: "पुष्प", en: "Flowers on the head", fx: "flowers", color: "#f2b7a0" },
+  white: { id: "flowers", hi: "श्वेत पुष्प", en: "White flowers on the head", fx: "flowers", color: "#f4efe4" },
+  red: { id: "flowers", hi: "लाल पुष्प", en: "Red flowers on the head", fx: "flowers", color: "#d45b4a" },
+  bilva: { id: "flowers", hi: "बिल्व", en: "Bilva leaves on the head", fx: "bilva", color: "#6a9a4a" },
+  durva: { id: "flowers", hi: "दूर्वा", en: "Durva on the crown", fx: "bilva", color: "#6a9a4a" },
+  tulsi: { id: "flowers", hi: "तुलसी", en: "Tulsi on the crown", fx: "bilva", color: "#3d8b5a" },
+  dhoop: { id: "dhoop", hi: "धूप", en: "Offer incense", fx: "dhoop", color: "#c4b8a8" },
+  aarti: { id: "aarti", hi: "आरती", en: "Circle the lamp", fx: "aarti", color: "#f0b040" },
+  pranam: { id: "pranam", hi: "प्रणाम", en: "Bow to the murti", fx: "pranam", color: "#ff7a5c" },
+  arghya: { id: "jal", hi: "अर्घ्य", en: "Offer arghya to Surya", fx: "water", color: "#7eb7e0" },
+};
+
+const FAMILIES = {
+  ganesha: ["jal", "milk", "chandan", "tilak", "durva", "dhoop", "aarti", "pranam"],
+  shiva: ["jal", "milk", "chandan", "tripundra", "bilva", "dhoop", "aarti", "pranam"],
+  "shiva-lingam": ["jal", "milk", "chandan", "tripundra", "bilva", "dhoop", "aarti", "pranam"],
+  vishnu: ["jal", "milk", "chandan", "tilak", "tulsi", "dhoop", "aarti", "pranam"],
+  devi: ["jal", "milk", "chandan", "sindoor", "red", "dhoop", "aarti", "pranam"],
+  "devi-sattva": ["jal", "milk", "chandan", "tilak", "white", "dhoop", "aarti", "pranam"],
+  hanuman: ["jal", "sindoor", "chandan", "tilak", "flowers", "dhoop", "aarti", "pranam"],
+  murugan: ["jal", "milk", "chandan", "tilak", "flowers", "dhoop", "aarti", "pranam"],
+  ayyappa: ["jal", "ghee", "chandan", "tilak", "flowers", "dhoop", "aarti", "pranam"],
+  saura: ["arghya", "chandan", "tilak", "flowers", "dhoop", "aarti", "pranam"],
+  shani: ["jal", "oil", "chandan", "tilak", "flowers", "dhoop", "aarti", "pranam"],
+  brahma: ["jal", "milk", "chandan", "tilak", "flowers", "dhoop", "aarti", "pranam"],
+  datta: ["jal", "milk", "chandan", "tilak", "flowers", "dhoop", "aarti", "pranam"],
+  base: ["jal", "milk", "chandan", "tilak", "flowers", "dhoop", "aarti", "pranam"],
+};
+
 function stepsFor(p) {
-  if (!p) return BASE_STEPS;
-  if (p.id === "shivling" || p.lingam) return SHIVA_STEPS;
-  if (p.id === "shiva") return [
-    { id: "jal", hi: "जल", en: "Pour jal on the crown", fx: "water", color: "#7eb7e0" },
-    { id: "milk", hi: "दुग्ध", en: "Pour milk on the crown", fx: "milk", color: "#f4efe4" },
-    { id: "chandan", hi: "चन्दन", en: "Sandal on the brow", fx: "chandan", color: "#e2c48a" },
-    { id: "tilak", hi: "त्रिपुण्ड्र", en: "Tripundra on the forehead", fx: "tilak", color: "#c4452d" },
-    { id: "flowers", hi: "बिल्व", en: "Bilva leaves on the head", fx: "bilva", color: "#6a9a4a" },
-    { id: "dhoop", hi: "धूप", en: "Offer incense", fx: "dhoop", color: "#c4b8a8" },
-    { id: "aarti", hi: "आरती", en: "Circle the lamp", fx: "aarti", color: "#f0b040" },
-    { id: "pranam", hi: "प्रणाम", en: "Bow to the murti", fx: "pranam", color: "#ff7a5c" },
-  ];
-  if (p.id === "ganesha") return GANESHA_STEPS;
-  return BASE_STEPS;
+  const keys = FAMILIES[p && p.family] || FAMILIES.base;
+  return keys.map((k) => ({ ...STEP[k] }));
 }
 
 const chooser = document.getElementById("chooser");
-const variants = document.getElementById("variants");
 const grid = document.getElementById("grid");
-const varGrid = document.getElementById("varGrid");
 const thali = document.getElementById("thali");
 const mantraHi = document.getElementById("mantraHi");
 const mantraEn = document.getElementById("mantraEn");
@@ -279,22 +261,21 @@ const offerBtn = document.getElementById("offerBtn");
 const done = document.getElementById("done");
 const fileInput = document.getElementById("fileInput");
 
+let MAIN = [];
 let current = null;
 let step = 0;
 let doneSet = new Set();
 let mounted = false;
 let customUrl = null;
-let shivaAudio = null;
-let STEPS = BASE_STEPS;
+let STEPS = stepsFor({ family: "base" });
 let selectGen = 0;
+let voiceGender = localStorage.getItem("aradhana-voice") || "female";
 
 function tile(p, host, onPick) {
   const b = document.createElement("button");
   b.type = "button";
-  b.className = "tile" + (p.lingam ? " lingam-tile" : "");
-  if (p.lingam) {
-    b.innerHTML = `<div class="lingam-art" aria-hidden="true"></div><span class="cap"><span class="hi">${p.hi}</span><span class="en">${p.en}</span></span>`;
-  } else if (p.src) {
+  b.className = "tile";
+  if (p.src) {
     b.innerHTML = `<img src="${p.src}" alt="${p.en}" loading="lazy"><span class="cap"><span class="hi">${p.hi}</span><span class="en">${p.en}</span></span>`;
   } else {
     b.classList.add("upload-tile");
@@ -304,17 +285,24 @@ function tile(p, host, onPick) {
   host.appendChild(b);
 }
 
-MAIN.forEach((p) => tile(p, grid, select));
-tile({ id: "custom", hi: "इष्ट", en: "Your image" }, grid, () => {
-  fileInput.value = ""; fileInput.click();
+function paintVoice() {
+  document.querySelectorAll("[data-voice]").forEach((b) => {
+    b.classList.toggle("on", b.dataset.voice === voiceGender);
+  });
+}
+function setVoice(g) {
+  voiceGender = g;
+  try { localStorage.setItem("aradhana-voice", g); } catch (e) {}
+  paintVoice();
+}
+document.querySelectorAll("[data-voice]").forEach((b) => {
+  b.addEventListener("click", (e) => {
+    e.stopPropagation();
+    setVoice(b.dataset.voice);
+    if (current) speak(current.mantra);
+  });
 });
-fileInput.addEventListener("change", (e) => {
-  const f = e.target.files && e.target.files[0];
-  if (!f) return;
-  if (customUrl) URL.revokeObjectURL(customUrl);
-  customUrl = URL.createObjectURL(f);
-  select({ id: "custom", hi: "इष्ट", en: "Ishta", src: customUrl, mantra: "ॐ", mantraEn: "Om" });
-});
+paintVoice();
 
 function buildThali() {
   thali.innerHTML = "";
@@ -346,28 +334,31 @@ async function ensureScene() {
   mounted = true;
 }
 
-function chant(text, id) {
-  if (id === "shiva" || id === "shivling" || id === "meditating") {
-    try {
-      if (!shivaAudio) {
-        shivaAudio = new Audio("../deities/om-namah-shivaya.mp3");
-        shivaAudio.volume = 0.7;
-      }
-      shivaAudio.currentTime = 0;
-      shivaAudio.play().catch(() => speak(text));
-      return;
-    } catch (e) {}
-  }
-  speak(text);
+function pickVoice() {
+  if (!window.speechSynthesis) return null;
+  const voices = window.speechSynthesis.getVoices() || [];
+  const hi = voices.filter((v) => /^hi/i.test(v.lang) || /hindi/i.test(v.name));
+  const india = voices.filter((v) => /en-IN|India/i.test(`${v.lang} ${v.name}`));
+  const pool = hi.length ? hi : (india.length ? india : voices);
+  const fem = /female|heera|zira|swara|kajal|vaishali|woman|samantha|female/i;
+  const mal = /male|ravi|hemant|kumar|david|google hindi male/i;
+  const tagged = pool.filter((v) => (voiceGender === "female" ? fem : mal).test(v.name));
+  if (tagged[0]) return tagged[0];
+  if (pool.length > 1) return voiceGender === "female" ? pool[0] : pool[pool.length - 1];
+  return pool[0] || voices[0] || null;
 }
+
 function speak(text) {
   if (!window.speechSynthesis) return;
   try {
     window.speechSynthesis.cancel();
     const u = new SpeechSynthesisUtterance(text);
-    u.lang = "hi-IN"; u.rate = 0.82; u.pitch = 1.08; u.volume = 0.72;
-    const hi = window.speechSynthesis.getVoices().find((v) => v.lang.startsWith("hi"));
-    if (hi) u.voice = hi;
+    u.lang = "hi-IN";
+    u.volume = 0.7;
+    if (voiceGender === "male") { u.rate = 0.72; u.pitch = 0.86; }
+    else { u.rate = 0.76; u.pitch = 1.08; }
+    const v = pickVoice();
+    if (v) u.voice = v;
     window.speechSynthesis.speak(u);
   } catch (e) {}
 }
@@ -386,7 +377,6 @@ async function select(p) {
   mantraHi.textContent = p.mantra;
   mantraEn.textContent = p.mantraEn;
   chooser.classList.add("hidden");
-  variants.classList.add("hidden");
   done.classList.remove("show");
   paint();
   const waking = document.getElementById("waking");
@@ -401,20 +391,19 @@ async function select(p) {
   } finally {
     if (gen === selectGen) waking.classList.add("hidden");
   }
-  chant(p.mantra, p.id);
+  speak(p.mantra);
   clearTimeout(hint._fade);
   hint._fade = setTimeout(() => hint.classList.add("gone"), 2600);
 }
 
-function doStep(i, fromChip) {
+function doStep(i) {
   if (!current) return;
   const s = STEPS[i];
   if (!s) return;
   doneSet.add(s.id);
   playOffer(s.fx);
-  if (s.fx === "pranam") chant(current.mantra, current.id);
-  if (!fromChip) step = Math.min(i + 1, STEPS.length - 1);
-  else step = Math.min(i + 1, STEPS.length - 1);
+  if (s.fx === "pranam") speak(current.mantra);
+  step = Math.min(i + 1, STEPS.length - 1);
   paint();
   if (doneSet.size >= STEPS.length) {
     setTimeout(() => done.classList.add("show"), 900);
@@ -423,19 +412,16 @@ function doStep(i, fromChip) {
 
 offerBtn.addEventListener("click", () => {
   if (doneSet.size >= STEPS.length) { done.classList.add("show"); return; }
-  doStep(step, false);
+  doStep(step);
 });
-mantraHi.addEventListener("click", () => { if (current) chant(current.mantra, current.id); });
+mantraHi.addEventListener("click", () => { if (current) speak(current.mantra); });
 document.getElementById("changeBtn").addEventListener("click", () => {
   if (window.speechSynthesis) window.speechSynthesis.cancel();
-  if (shivaAudio) { shivaAudio.pause(); }
   chooser.classList.remove("hidden");
 });
 function goRoot() {
   if (window.speechSynthesis) window.speechSynthesis.cancel();
-  if (shivaAudio) { shivaAudio.pause(); }
   done.classList.remove("show");
-  variants.classList.add("hidden");
   chooser.classList.remove("hidden");
 }
 window.addEventListener("message", (e) => {
@@ -449,7 +435,31 @@ document.getElementById("anotherBtn").addEventListener("click", () => {
   done.classList.remove("show");
   chooser.classList.remove("hidden");
 });
-paint();
+
+fileInput.addEventListener("change", (e) => {
+  const f = e.target.files && e.target.files[0];
+  if (!f) return;
+  if (customUrl) URL.revokeObjectURL(customUrl);
+  customUrl = URL.createObjectURL(f);
+  select({ id: "custom", hi: "इष्ट", en: "Ishta", src: customUrl, mantra: "ॐ", mantraEn: "Om", family: "base", crown: 0.06, brow: 0.24 });
+});
+
+async function boot() {
+  try {
+    const r = await fetch("./deities.json?v=u1");
+    const data = await r.json();
+    MAIN = data.deities || [];
+  } catch (e) {
+    MAIN = [];
+  }
+  grid.innerHTML = "";
+  MAIN.forEach((p) => tile(p, grid, select));
+  tile({ id: "custom", hi: "इष्ट", en: "Your image" }, grid, () => {
+    fileInput.value = ""; fileInput.click();
+  });
+  paint();
+}
+boot();
 </script>
 </body>
 </html>

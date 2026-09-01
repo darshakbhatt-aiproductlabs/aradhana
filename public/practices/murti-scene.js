@@ -18,6 +18,9 @@ const coats = [];
 const mats = {};
 const _v = new THREE.Vector3();
 let loadGen = 0;
+let kalashAnim = null;
+let dropGeo = null;
+
 
 const ANCHORS = {
   ganesha: { crown: [0.5, 0.93], brow: [0.5, 0.62] },
@@ -64,6 +67,7 @@ function readyMats() {
   mat("chandan", { color: 0xe8d09a, roughness: 0.48, metalness: 0.04 });
   mat("bhasma", { color: 0xe8e2d6, roughness: 0.62, metalness: 0.02 });
   mat("petal", { color: 0xf2b7a0, roughness: 0.5, metalness: 0.04 });
+  mat("oil", { color: 0x6b4a1e, roughness: 0.22, metalness: 0.04, transparent: true, opacity: 0.82 });
   mat("leaf", { color: 0x6a9a4a, roughness: 0.55, metalness: 0.04 });
   mat("flame", { color: 0xffc14a, emissive: 0xff9a1a, emissiveIntensity: 1.6, roughness: 0.4 });
 }
@@ -164,7 +168,7 @@ function loadImage(url) {
 }
 
 function punchBackground(img) {
-  const maxW = 640;
+  const maxW = 720;
   const scale = Math.min(1, maxW / img.width);
   const w = Math.max(2, Math.round(img.width * scale));
   const h = Math.max(2, Math.round(img.height * scale));
@@ -176,6 +180,17 @@ function punchBackground(img) {
   const imgData = ctx.getImageData(0, 0, w, h);
   const d = imgData.data;
 
+  let edgeClear = 0;
+  let edgeN = 0;
+  for (let x = 0; x < w; x++) {
+    if (d[x * 4 + 3] < 10) edgeClear += 1;
+    if (d[((h - 1) * w + x) * 4 + 3] < 10) edgeClear += 1;
+    edgeN += 2;
+  }
+  if (edgeN && edgeClear / edgeN > 0.18) {
+    return { canvas: c, data: imgData, w, h, preCut: true };
+  }
+
   const sample = (x, y) => {
     const i = (y * w + x) * 4;
     return [d[i], d[i + 1], d[i + 2]];
@@ -185,6 +200,7 @@ function punchBackground(img) {
   corners.forEach((p) => { bg[0] += p[0]; bg[1] += p[1]; bg[2] += p[2]; });
   bg[0] /= 4; bg[1] /= 4; bg[2] /= 4;
   const bgSat = Math.max(bg[0], bg[1], bg[2]) - Math.min(bg[0], bg[1], bg[2]);
+  const bgLuma = 0.299 * bg[0] + 0.587 * bg[1] + 0.114 * bg[2];
 
   const dist = (x, y) => {
     const i = (y * w + x) * 4;
@@ -197,8 +213,12 @@ function punchBackground(img) {
     const i = (y * w + x) * 4;
     return Math.max(d[i], d[i + 1], d[i + 2]) - Math.min(d[i], d[i + 1], d[i + 2]);
   };
+  const lumaAt = (x, y) => {
+    const i = (y * w + x) * 4;
+    return 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+  };
 
-  const thresh = 74;
+  const thresh = bgLuma < 40 ? 48 : 74;
   const visited = new Uint8Array(w * h);
   const stack = [];
   const push = (x, y) => {
@@ -206,8 +226,12 @@ function punchBackground(img) {
     const p = y * w + x;
     if (visited[p]) return;
     const di = dist(x, y);
-    if (di > thresh) return;
-    if (satAt(x, y) > bgSat + 42 && di > 26) return;
+    const s = satAt(x, y);
+    const lu = lumaAt(x, y);
+    if (s > bgSat + 40 && di > 26) return;
+    if (bgLuma < 40) {
+      if (!(lu < 42 && s < 22)) return;
+    } else if (di > thresh && !(s < 14 && lu > 232)) return;
     visited[p] = 1;
     stack.push(p);
   };
@@ -222,7 +246,7 @@ function punchBackground(img) {
   }
 
   ctx.putImageData(imgData, 0, 0);
-  return { canvas: c, data: imgData, w, h };
+  return { canvas: c, data: imgData, w, h, preCut: false };
 }
 
 function erodeAlpha(imgData, w, h, times) {
@@ -356,17 +380,22 @@ function reliefGeometry(imgData, w, h, width, height) {
   return geo;
 }
 
-function pathsFromRows(rows, w, h, width, height, y0, id) {
+function pathsFromRows(rows, w, h, width, height, y0, spec) {
+  spec = spec || {};
   const toLocal = (px, py, z) => new THREE.Vector3(
     ((px / (w - 1)) - 0.5) * width,
     y0 + (0.5 - py / (h - 1)) * height,
     z,
   );
-  const step = Math.max(1, (rows.length / 22) | 0);
+  const crownT = spec.crown != null ? spec.crown : 0.04;
+  const browT = spec.brow != null ? spec.brow : (BROW_T[spec.id] || BROW_T.custom);
+  const cx = spec.crownX != null ? spec.crownX : 0.5;
+  const start = Math.min(rows.length - 1, Math.max(0, Math.round(rows.length * crownT)));
+  const step = Math.max(1, ((rows.length - start) / 20) | 0);
   const left = [];
   const right = [];
   const center = [];
-  for (let i = 0; i < rows.length; i += step) {
+  for (let i = start; i < rows.length; i += step) {
     const r = rows[i];
     left.push(toLocal(r.minX, r.y, 0.14));
     right.push(toLocal(r.maxX, r.y, 0.14));
@@ -376,16 +405,16 @@ function pathsFromRows(rows, w, h, width, height, y0, id) {
   left.push(toLocal(last.minX, last.y, 0.1));
   right.push(toLocal(last.maxX, last.y, 0.1));
   center.push(toLocal(last.mid, last.y, 0.12));
-  const crownRow = rows[Math.min(rows.length - 1, (rows.length * 0.03) | 0)];
-  const browT = BROW_T[id] || BROW_T.custom;
-  const browRow = rows[Math.min(rows.length - 1, (rows.length * browT) | 0)];
-  const chestRow = rows[Math.min(rows.length - 1, (rows.length * 0.5) | 0)];
+  const crownRow = rows[start];
+  const browRow = rows[Math.min(rows.length - 1, Math.max(start, Math.round(rows.length * browT)))];
+  const chestRow = rows[Math.min(rows.length - 1, Math.round(rows.length * 0.5))];
+  const clampX = (row, frac) => Math.min(row.maxX, Math.max(row.minX, frac * (w - 1)));
   return {
     left,
     right,
     center,
-    crownPos: toLocal(crownRow.mid, crownRow.y, 0.22),
-    browPos: toLocal(browRow.mid, browRow.y, 0.24),
+    crownPos: toLocal(clampX(crownRow, cx), crownRow.y, 0.22),
+    browPos: toLocal(clampX(browRow, cx), browRow.y, 0.24),
     chestPos: toLocal(chestRow.mid, chestRow.y, 0.18),
     basePos: toLocal(last.mid, last.y, 0.08),
   };
@@ -410,7 +439,7 @@ async function makeStatue(spec) {
   g.add(pedestal());
   const img = await loadImage(spec.src);
   const punched = punchBackground(img);
-  erodeAlpha(punched.data, punched.w, punched.h, 3);
+  if (!punched.preCut) erodeAlpha(punched.data, punched.w, punched.h, 2);
   const pctx = punched.canvas.getContext("2d");
   pctx.putImageData(punched.data, 0, 0);
   const rows = silhouetteRows(punched.data, punched.w, punched.h, 40);
@@ -477,7 +506,7 @@ async function makeStatue(spec) {
   let base;
   let paths = null;
   if (rows.length > 8) {
-    const P = pathsFromRows(rows, punched.w, punched.h, width, height, y0, spec.id);
+    const P = pathsFromRows(rows, punched.w, punched.h, width, height, y0, spec);
     paths = { left: P.left, right: P.right, center: P.center };
     crown = dummy(P.crownPos.x, P.crownPos.y, P.crownPos.z);
     brow = dummy(P.browPos.x, P.browPos.y, P.browPos.z);
@@ -534,24 +563,38 @@ function addCoat(kind) {
   coats.push(coat);
 }
 
+function dropMesh(matRef, size) {
+  if (!dropGeo) dropGeo = new THREE.SphereGeometry(1, 8, 8);
+  const d = new THREE.Mesh(dropGeo, matRef);
+  d.scale.set(size * 0.65, size * 1.4, size * 0.65);
+  d.castShadow = false;
+  d.receiveShadow = false;
+  return d;
+}
+
 function pour(kind) {
   if (!current) return;
   const top = worldOf(current.userData.anchors.crown);
   const brow = worldOf(current.userData.anchors.forehead);
   const chest = worldOf(current.userData.anchors.chest);
   const base = worldOf(current.userData.anchors.base);
-  kalash.position.copy(top).add(new THREE.Vector3(0.12, 0.28, 0.14));
-  kalash.rotation.set(0.18, 0, -0.72);
+  const hold = top.clone().add(new THREE.Vector3(0.16, 0.36, 0.2));
+  const spout = hold.clone().add(new THREE.Vector3(-0.04, -0.02, 0));
+  kalash.position.copy(hold);
+  kalash.rotation.set(0.08, 0, -0.12);
   kalash.visible = true;
-  addCoat(kind);
+  kalashAnim = { t: 0, hold };
+  const coatKind = kind === "oil" ? "milk" : kind;
+  addCoat(coatKind);
   if (milkPool && kind === "milk") milkPool.material.opacity = 0.72;
   else if (milkPool && kind === "water") {
     milkPool.material.color = mats.water.color;
     milkPool.material.opacity = 0.45;
   }
   const isMilk = kind === "milk";
-  const colorMat = isMilk ? mats.milk : mats.water;
-  const n = reduced ? 22 : 56;
+  const isOil = kind === "oil";
+  const colorMat = isOil ? mats.oil : (isMilk ? mats.milk : mats.water);
+  const n = reduced ? 28 : 72;
   const lingam = current.userData.kind === "lingam";
   const localPaths = current.userData.paths;
   const worldPaths = localPaths
@@ -561,30 +604,44 @@ function pour(kind) {
       center: localPaths.center.map((p) => current.localToWorld(p.clone())),
     }
     : null;
+  const size = isMilk || isOil ? 0.02 : 0.014;
   for (let i = 0; i < n; i++) {
-    const d = mesh(new THREE.SphereGeometry(isMilk ? 0.022 : 0.016, 8, 8), colorMat);
-    d.castShadow = false;
-    let path = null;
+    const d = dropMesh(colorMat, size);
+    let body = null;
     if (!lingam) {
       if (worldPaths) {
         const which = i % 3;
-        path = which === 0 ? worldPaths.center : which === 1 ? worldPaths.left : worldPaths.right;
+        body = which === 0 ? worldPaths.center : which === 1 ? worldPaths.left : worldPaths.right;
       } else {
-        path = [top.clone(), brow.clone(), chest.clone(), base.clone()];
+        body = [top.clone(), brow.clone(), chest.clone(), base.clone()];
       }
     }
+    const path = body ? [spout.clone(), top.clone(), ...body] : null;
     d.userData = {
       ang: Math.random() * Math.PI * 2,
-      u: -Math.random() * 0.12,
-      speed: 0.55 + Math.random() * 0.35,
+      u: -((i / n) * 1.05 + Math.random() * 0.04),
+      speed: (isMilk || isOil ? 0.44 : 0.64) + Math.random() * 0.22,
       kind: current.userData.kind,
       path,
     };
-    d.position.copy(top);
+    d.position.copy(spout);
+    d.visible = false;
     fxRoot.add(d);
     drops.push(d);
   }
-  setTimeout(() => { kalash.visible = false; }, 1700);
+}
+
+function stepKalash(dt) {
+  if (!kalashAnim || !kalash) return;
+  kalashAnim.t += dt;
+  const t = kalashAnim.t;
+  if (t < 0.32) kalash.rotation.z = -0.12 - 0.7 * (t / 0.32);
+  else if (t < 1.55) kalash.rotation.z = -0.82;
+  else if (t < 2.05) kalash.rotation.z = -0.82 + 0.7 * ((t - 1.55) / 0.5);
+  else {
+    kalash.visible = false;
+    kalashAnim = null;
+  }
 }
 
 function mark(kind) {
@@ -691,6 +748,11 @@ function stepDrops(dt) {
     const d = drops[i];
     d.userData.u += d.userData.speed * dt;
     const u = d.userData.u;
+    if (u < 0) {
+      d.visible = false;
+      continue;
+    }
+    d.visible = true;
     if (d.userData.kind === "lingam") {
       const y = 1.14 - u * 0.72;
       let r = 0.04;
@@ -707,8 +769,9 @@ function stepDrops(dt) {
       const i0 = Math.min(Math.floor(t), max - 1);
       const f = t - i0;
       d.position.lerpVectors(path[i0], path[i0 + 1], f);
-      d.position.x += Math.cos(d.userData.ang) * 0.012;
-      if (u > max + 0.25) { fxRoot.remove(d); drops.splice(i, 1); }
+      d.position.x += Math.cos(d.userData.ang) * 0.01;
+      d.lookAt(path[Math.min(i0 + 1, max)]);
+      if (u > max + 0.2) { fxRoot.remove(d); drops.splice(i, 1); }
     }
   }
 }
@@ -770,6 +833,7 @@ function loop(t) {
   const dt = Math.min(0.05, (t - lastT) / 1000 || 0.016);
   lastT = t;
   stepDrops(dt);
+  stepKalash(dt);
   stepPetals(dt);
   stepSmoke(dt);
   stepAarti(dt);
@@ -792,6 +856,7 @@ function clearFx() {
   coats.length = 0;
   if (aartiLamp) { fxRoot.remove(aartiLamp); aartiLamp = null; }
   if (kalash) kalash.visible = false;
+  kalashAnim = null;
   milkPool = null;
 }
 
@@ -957,7 +1022,7 @@ export async function showDeity(spec) {
 }
 
 export function playOffer(kind) {
-  if (kind === "water" || kind === "milk") pour(kind);
+  if (kind === "water" || kind === "milk" || kind === "oil") pour(kind);
   else if (kind === "tilak" || kind === "chandan") mark(kind);
   else if (kind === "flowers") shower("flowers");
   else if (kind === "bilva") shower("bilva");
