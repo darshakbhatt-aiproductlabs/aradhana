@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Cut studio / checkerboard / black backdrops off the bronze murti photos."""
+"""Keep the bronze murti. Punch peach / checker / taupe — including holes between limbs."""
 from pathlib import Path
+from collections import deque
 from PIL import Image
-import collections
+import numpy as np
 
 SRC = Path("/workspace/attachments")
 OUT_DIRS = [Path("/workspace/public/deities"), Path("/workspace/docs/deities")]
@@ -31,144 +32,133 @@ MAP = {
 }
 
 
-def luma(c):
-    return 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]
+def dilate(mask, r=1):
+    h, w = mask.shape
+    out = mask.copy()
+    for dy in range(-r, r + 1):
+        for dx in range(-r, r + 1):
+            if dx == 0 and dy == 0:
+                continue
+            y0, y1 = max(0, dy), min(h, h + dy)
+            x0, x1 = max(0, dx), min(w, w + dx)
+            sy0, sy1 = max(0, -dy), min(h, h - dy)
+            sx0, sx1 = max(0, -dx), min(w, w - dx)
+            out[y0:y1, x0:x1] |= mask[sy0:sy1, sx0:sx1]
+    return out
 
 
-def sat(c):
-    return max(c[0], c[1], c[2]) - min(c[0], c[1], c[2])
-
-
-def classify(im):
-    w, h = im.size
-    pts = [
-        (2, 2), (w - 3, 2), (2, h - 3), (w - 3, h - 3),
-        (w // 2, 2), (2, h // 2), (w - 3, h // 2), (w // 2, h - 3),
-    ]
-    samples = [im.getpixel(p)[:3] for p in pts]
-    avg_l = sum(luma(c) for c in samples) / len(samples)
-    avg_s = sum(sat(c) for c in samples) / len(samples)
-    crop = im.crop((0, 0, 36, 36)).convert("RGB")
-    uniq = len(set(crop.getdata()))
-    if avg_l < 38 and avg_s < 12:
-        return "black"
-    if avg_l > 248 and avg_s < 10:
-        return "white"
-    if uniq > 18 and 200 < avg_l < 245 and avg_s < 12:
-        return "checker"
-    return "studio"
+def studio_components(studio):
+    h, w = studio.shape
+    labels = np.zeros((h, w), dtype=np.int32)
+    vis = np.zeros((h, w), dtype=np.uint8)
+    sizes = {}
+    border = {}
+    lab = 0
+    neigh = ((1, 0), (-1, 0), (0, 1), (0, -1), (1, 1), (1, -1), (-1, 1), (-1, -1))
+    ys, xs = np.where(studio)
+    for y, x in zip(ys, xs):
+        if vis[y, x]:
+            continue
+        lab += 1
+        q = deque([(x, y)])
+        vis[y, x] = 1
+        n = 0
+        hits_border = False
+        while q:
+            cx, cy = q.popleft()
+            labels[cy, cx] = lab
+            n += 1
+            if cx == 0 or cy == 0 or cx == w - 1 or cy == h - 1:
+                hits_border = True
+            for dx, dy in neigh:
+                nx, ny = cx + dx, cy + dy
+                if nx < 0 or ny < 0 or nx >= w or ny >= h:
+                    continue
+                if vis[ny, nx] or not studio[ny, nx]:
+                    continue
+                vis[ny, nx] = 1
+                q.append((nx, ny))
+        sizes[lab] = n
+        border[lab] = hits_border
+    return labels, sizes, border
 
 
 def punch(im):
     im = im.convert("RGBA")
-    w, h = im.size
-    px = im.load()
-    mode = classify(im.convert("RGB"))
-    corners = [px[2, 2], px[w - 3, 2], px[2, h - 3], px[w - 3, h - 3]]
-    bg = tuple(sum(c[i] for c in corners) // 4 for i in range(3))
+    arr = np.array(im)
+    rgb = arr[:, :, :3].astype(np.float32)
+    r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
+    lu = 0.299 * r + 0.587 * g + 0.114 * b
+    s = rgb.max(axis=2) - rgb.min(axis=2)
 
-    def is_bg(x, y):
-        r, g, b, a = px[x, y]
-        s = sat((r, g, b))
-        lu = luma((r, g, b))
-        d = ((r - bg[0]) ** 2 + (g - bg[1]) ** 2 + (b - bg[2]) ** 2) ** 0.5
-        if s > 36 and d > 28:
-            return False
-        if mode == "black":
-            return lu < 42 and s < 22
-        if mode == "white":
-            return lu > 236 and s < 22
-        if mode == "checker":
-            return s < 16 and lu > 196
-        return d < 42 and s < 28
+    bronze = (r > g + 4) & (r > b + 20) & (s > 36) & (lu > 22) & (lu < 232) & (b < 170)
+    bronze |= (r > b + 8) & (r >= g - 4) & (s > 14) & (lu > 8) & (lu < 88)
 
-    vis = bytearray(w * h)
-    stack = []
+    peach = (lu > 158) & (s < 72) & (r >= g - 8) & (g >= b - 14) & (b > 130) & (~bronze)
+    gray = (s < 30) & (lu > 108) & (np.abs(r - g) < 24) & (np.abs(g - b) < 26) & (~bronze)
+    taupe = (s < 40) & (lu > 88) & (lu < 190) & (np.abs(r - g) < 26) & (np.abs(g - b) < 30) & (~bronze)
+    white = (lu > 228) & (s < 50) & (~bronze)
+    studio = peach | gray | taupe | white
 
-    def push(x, y):
-        if x < 0 or y < 0 or x >= w or y >= h:
-            return
-        i = y * w + x
-        if vis[i]:
-            return
-        if not is_bg(x, y):
-            return
-        vis[i] = 1
-        stack.append(i)
+    labels, sizes, on_border = studio_components(studio)
+    punch_mask = np.zeros(studio.shape, dtype=bool)
+    # Eyes / moon / pearls stay (tiny). Enclosed peach between limbs goes.
+    for lab, n in sizes.items():
+        if on_border[lab] or n >= 70:
+            punch_mask[labels == lab] = True
 
-    for x in range(w):
-        push(x, 0)
-        push(x, h - 1)
-    for y in range(h):
-        push(0, y)
-        push(w - 1, y)
-    while stack:
-        i = stack.pop()
-        x, y = i % w, i // w
-        px[x, y] = (px[x, y][0], px[x, y][1], px[x, y][2], 0)
-        push(x + 1, y)
-        push(x - 1, y)
-        push(x, y + 1)
-        push(x, y - 1)
+    # Keep a 1px bronze fringe so AA edges of the murti are not eaten.
+    keep = bronze | (dilate(bronze, 1) & ~punch_mask)
+    arr[~keep, 3] = 0
 
-    # Grok watermark — faint mark in the lower-right on studio shots
-    for y in range(h - 28, h):
-        for x in range(w - 110, w):
-            r, g, b, a = px[x, y]
-            if a == 0:
-                continue
-            if sat((r, g, b)) < 40 and (luma((r, g, b)) > 160 or luma((r, g, b)) < 50):
-                px[x, y] = (r, g, b, 0)
+    a = arr[:, :, 3]
+    # Soften the cut
+    up = np.roll(a, 1, 0)
+    down = np.roll(a, -1, 0)
+    left = np.roll(a, 1, 1)
+    right = np.roll(a, -1, 1)
+    n0 = ((up == 0).astype(np.uint8) + (down == 0) + (left == 0) + (right == 0))
+    fade = (a > 0) & (n0 > 0) & (~bronze)
+    arr[:, :, 3] = np.where(fade, np.maximum(40, a.astype(np.int16) - n0 * 55), a)
 
-    # erode 2px so cream/black fringes don't become a halo
-    for _ in range(2):
-        kill = []
-        for y in range(1, h - 1):
-            for x in range(1, w - 1):
-                if px[x, y][3] == 0:
-                    continue
-                if (
-                    px[x - 1, y][3] == 0
-                    or px[x + 1, y][3] == 0
-                    or px[x, y - 1][3] == 0
-                    or px[x, y + 1][3] == 0
-                ):
-                    kill.append((x, y))
-        for x, y in kill:
-            r, g, b, _ = px[x, y]
-            px[x, y] = (r, g, b, 0)
+    # Watermark / caption strip
+    h, w = a.shape
+    patch_a = arr[h - 30 :, w - 120 :, 3]
+    patch = arr[h - 30 :, w - 120 :, :3].astype(np.float32)
+    plu = 0.299 * patch[:, :, 0] + 0.587 * patch[:, :, 1] + 0.114 * patch[:, :, 2]
+    ps = patch.max(axis=2) - patch.min(axis=2)
+    kill = (ps < 42) & ((plu > 155) | (plu < 55))
+    arr[h - 30 :, w - 120 :, 3] = np.where(kill, 0, patch_a)
 
-    # feather 1px
-    for y in range(1, h - 1):
-        for x in range(1, w - 1):
-            if px[x, y][3] == 0:
-                continue
-            n = 0
-            if px[x - 1, y][3] == 0:
-                n += 1
-            if px[x + 1, y][3] == 0:
-                n += 1
-            if px[x, y - 1][3] == 0:
-                n += 1
-            if px[x, y + 1][3] == 0:
-                n += 1
-            if n:
-                r, g, b, a = px[x, y]
-                px[x, y] = (r, g, b, max(40, a - n * 70))
+    return Image.fromarray(arr, "RGBA")
 
-    return im, mode
+
+def leftover_frac(im):
+    arr = np.array(im)
+    rgb = arr[:, :, :3].astype(np.float32)
+    a = arr[:, :, 3]
+    r, g, b = rgb[:, :, 0], rgb[:, :, 1], rgb[:, :, 2]
+    lu = 0.299 * r + 0.587 * g + 0.114 * b
+    s = rgb.max(axis=2) - rgb.min(axis=2)
+    bronze = (r > g + 4) & (r > b + 20) & (s > 36) & (lu > 22) & (lu < 232) & (b < 170)
+    studio = (a > 20) & (~bronze) & (
+        ((s < 30) & (lu > 110))
+        | ((s < 55) & (lu > 175) & (r >= g - 8))
+        | ((lu > 235) & (s < 50))
+    )
+    return float(studio.mean() * 100), float((a > 10).mean() * 100)
 
 
 def main():
     for src_name, dest in MAP.items():
         src = SRC / src_name
-        im = Image.open(src)
-        cut, mode = punch(im)
+        cut = punch(Image.open(src))
         cut.thumbnail((900, 1340), Image.Resampling.LANCZOS)
+        leftover, opaque = leftover_frac(cut)
         for out_dir in OUT_DIRS:
             out_dir.mkdir(parents=True, exist_ok=True)
             cut.save(out_dir / dest, "WEBP", quality=92, method=6)
-        print(f"{dest:22} {mode:8} {cut.size} alpha")
+        print(f"{dest:22} {cut.size[0]}x{cut.size[1]} opaque={opaque:5.1f}% leftover={leftover:5.2f}%")
 
 
 if __name__ == "__main__":

@@ -15,7 +15,9 @@ const petals = [];
 const smokes = [];
 const marks = [];
 const mists = [];
+const rivulets = [];
 let aartiLamp = null;
+let incenseStick = null;
 let aartiT = 0;
 let kalashAnim = null;
 let wetSim = null;
@@ -32,6 +34,12 @@ let milkSpriteMat = null;
 let oilSpriteMat = null;
 let mistMat = null;
 let sparkMat = null;
+let streakWaterMat = null;
+let streakMilkMat = null;
+let streakOilMat = null;
+let wispMat = null;
+let diyaSpriteMap = null;
+let leafMaps = {};
 
 const mats = {};
 const _v = new THREE.Vector3();
@@ -51,11 +59,20 @@ const WET_FRAG = [
   "void main() {",
   "  vec4 w = texture2D(uWet, vUv);",
   "  if (w.a < 0.02) discard;",
-  "  float spec = pow(w.r, 2.4);",
-  "  vec3 dark = mix(vec3(0.12, 0.16, 0.2), vec3(0.46, 0.4, 0.32), uKind);",
-  "  vec3 gloss = mix(vec3(0.82, 0.92, 0.98), vec3(0.97, 0.94, 0.88), uKind);",
-  "  vec3 col = mix(dark, gloss, spec);",
-  "  gl_FragColor = vec4(col, w.a * 0.42 + spec * 0.22);",
+  "  float spec = pow(w.r, 2.2);",
+  "  vec3 col;",
+  "  float alpha;",
+  "  if (uKind < 0.5) {",
+  "    col = mix(vec3(0.42, 0.78, 0.96), vec3(0.95, 0.99, 1.0), spec);",
+  "    alpha = w.a * 0.62 + spec * 0.38;",
+  "  } else if (uKind < 1.5) {",
+  "    col = mix(vec3(0.97, 0.94, 0.84), vec3(1.0, 0.99, 0.94), spec);",
+  "    alpha = w.a * 0.88 + spec * 0.1;",
+  "  } else {",
+  "    col = mix(vec3(0.50, 0.32, 0.08), vec3(0.90, 0.70, 0.28), spec);",
+  "    alpha = w.a * 0.8;",
+  "  }",
+  "  gl_FragColor = vec4(col, alpha);",
   "}",
 ].join("\n");
 
@@ -137,6 +154,151 @@ function radialTex(stops, size) {
   return t;
 }
 
+function streakTex(core, mid, edge) {
+  const c = document.createElement("canvas");
+  c.width = 64;
+  c.height = 256;
+  const ctx = c.getContext("2d");
+  const g = ctx.createLinearGradient(32, 0, 32, 256);
+  g.addColorStop(0, "rgba(255,255,255,0)");
+  g.addColorStop(0.08, core);
+  g.addColorStop(0.45, mid);
+  g.addColorStop(0.82, edge);
+  g.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(32, 8);
+  ctx.bezierCurveTo(52, 40, 50, 140, 32, 248);
+  ctx.bezierCurveTo(14, 140, 12, 40, 32, 8);
+  ctx.fill();
+  const hl = ctx.createLinearGradient(20, 0, 44, 0);
+  hl.addColorStop(0, "rgba(255,255,255,0)");
+  hl.addColorStop(0.5, "rgba(255,255,255,0.55)");
+  hl.addColorStop(1, "rgba(255,255,255,0)");
+  ctx.globalCompositeOperation = "lighter";
+  ctx.fillStyle = hl;
+  ctx.fillRect(24, 20, 16, 200);
+  const t = new THREE.CanvasTexture(c);
+  t.needsUpdate = true;
+  return t;
+}
+
+function wispTex() {
+  const c = document.createElement("canvas");
+  c.width = 64;
+  c.height = 128;
+  const ctx = c.getContext("2d");
+  const g = ctx.createLinearGradient(32, 128, 32, 0);
+  g.addColorStop(0, "rgba(255,220,160,0.0)");
+  g.addColorStop(0.15, "rgba(255,210,150,0.35)");
+  g.addColorStop(0.45, "rgba(210,210,210,0.22)");
+  g.addColorStop(0.8, "rgba(190,190,190,0.08)");
+  g.addColorStop(1, "rgba(180,180,180,0)");
+  ctx.fillStyle = g;
+  ctx.beginPath();
+  ctx.moveTo(32, 124);
+  ctx.bezierCurveTo(18, 90, 44, 60, 26, 28);
+  ctx.bezierCurveTo(22, 16, 30, 8, 32, 4);
+  ctx.bezierCurveTo(36, 8, 42, 16, 38, 28);
+  ctx.bezierCurveTo(20, 60, 46, 90, 32, 124);
+  ctx.fill();
+  const t = new THREE.CanvasTexture(c);
+  t.needsUpdate = true;
+  return t;
+}
+
+function paintDiya() {
+  const c = document.createElement("canvas");
+  c.width = 128;
+  c.height = 160;
+  const ctx = c.getContext("2d");
+  const bowl = ctx.createLinearGradient(24, 110, 104, 150);
+  bowl.addColorStop(0, "#c49a4a");
+  bowl.addColorStop(0.5, "#f0d078");
+  bowl.addColorStop(1, "#8a5a20");
+  ctx.fillStyle = bowl;
+  ctx.beginPath();
+  ctx.ellipse(64, 128, 46, 16, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.moveTo(18, 128);
+  ctx.quadraticCurveTo(64, 98, 110, 128);
+  ctx.quadraticCurveTo(64, 150, 18, 128);
+  ctx.fill();
+  ctx.fillStyle = "#3a220c";
+  ctx.beginPath();
+  ctx.ellipse(64, 118, 18, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
+  const flame = ctx.createRadialGradient(64, 70, 4, 64, 88, 42);
+  flame.addColorStop(0, "rgba(255,255,230,1)");
+  flame.addColorStop(0.25, "rgba(255,200,70,0.95)");
+  flame.addColorStop(0.6, "rgba(255,90,16,0.45)");
+  flame.addColorStop(1, "rgba(255,40,0,0)");
+  ctx.fillStyle = flame;
+  ctx.beginPath();
+  ctx.moveTo(64, 28);
+  ctx.bezierCurveTo(88, 70, 82, 110, 64, 128);
+  ctx.bezierCurveTo(46, 110, 40, 70, 64, 28);
+  ctx.fill();
+  const t = new THREE.CanvasTexture(c);
+  t.needsUpdate = true;
+  return t;
+}
+
+function paintLeaf(kind) {
+  const c = document.createElement("canvas");
+  c.width = 64;
+  c.height = 64;
+  const ctx = c.getContext("2d");
+  if (kind === "durva") {
+    ctx.strokeStyle = "#5a9a3a";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    [[32, 58, 22, 8], [32, 58, 32, 6], [32, 58, 44, 10]].forEach((p) => {
+      ctx.beginPath();
+      ctx.moveTo(p[0], p[1]);
+      ctx.quadraticCurveTo(32, 28, p[2], p[3]);
+      ctx.stroke();
+    });
+  } else if (kind === "bilva") {
+    ctx.fillStyle = "#6a9a4a";
+    [[32, 22], [18, 38], [46, 38]].forEach((p) => {
+      ctx.beginPath();
+      ctx.ellipse(p[0], p[1], 11, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.strokeStyle = "#3d6a28";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(32, 58);
+    ctx.lineTo(32, 22);
+    ctx.stroke();
+  } else if (kind === "tulsi") {
+    ctx.fillStyle = "#3d8b5a";
+    ctx.beginPath();
+    ctx.ellipse(32, 30, 14, 22, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#2a5c3a";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(32, 50);
+    ctx.lineTo(32, 10);
+    ctx.stroke();
+  } else {
+    ctx.fillStyle = "#f2b7a0";
+    ctx.beginPath();
+    ctx.ellipse(32, 34, 20, 14, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#e89888";
+    ctx.beginPath();
+    ctx.ellipse(28, 32, 8, 6, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.needsUpdate = true;
+  return t;
+}
+
 function ensureFxMats() {
   if (dropSpriteMat) return;
   const dropTex = radialTex([
@@ -184,12 +346,38 @@ function ensureFxMats() {
     map: sparkTex, transparent: true, depthWrite: false,
     blending: THREE.AdditiveBlending, opacity: 1, toneMapped: false,
   });
+  const sw = streakTex("rgba(210,240,255,0.95)", "rgba(90,190,235,0.75)", "rgba(70,160,220,0.15)");
+  streakWaterMat = new THREE.SpriteMaterial({
+    map: sw, transparent: true, depthWrite: false, opacity: 0.92, toneMapped: false,
+  });
+  const sm = streakTex("rgba(255,255,248,0.96)", "rgba(246,236,210,0.88)", "rgba(236,226,200,0.2)");
+  streakMilkMat = new THREE.SpriteMaterial({
+    map: sm, transparent: true, depthWrite: false, opacity: 0.95, toneMapped: false,
+  });
+  const so = streakTex("rgba(255,220,140,0.9)", "rgba(150,100,36,0.7)", "rgba(90,55,16,0.15)");
+  streakOilMat = new THREE.SpriteMaterial({
+    map: so, transparent: true, depthWrite: false, opacity: 0.88, toneMapped: false,
+  });
+  wispMat = new THREE.SpriteMaterial({
+    map: wispTex(), transparent: true, depthWrite: false, opacity: 0.55, toneMapped: false,
+  });
+  diyaSpriteMap = paintDiya();
+  leafMaps.durva = paintLeaf("durva");
+  leafMaps.bilva = paintLeaf("bilva");
+  leafMaps.tulsi = paintLeaf("tulsi");
+  leafMaps.flowers = paintLeaf("flowers");
 }
 
 function dropMatFor(kind) {
   if (kind === "milk") return milkSpriteMat;
   if (kind === "oil") return oilSpriteMat;
   return dropSpriteMat;
+}
+
+function streakMatFor(kind) {
+  if (kind === "milk") return streakMilkMat;
+  if (kind === "oil") return streakOilMat;
+  return streakWaterMat;
 }
 
 function pedestal() {
@@ -472,8 +660,8 @@ function addDrop(kind, x, y, z, vx, vy, vz, life, role) {
   const s = new THREE.Sprite(matRef);
   const stream = role === "stream";
   const splash = role === "splash";
-  const sx = stream ? 0.034 : splash ? 0.022 : 0.018;
-  const sy = stream ? 0.055 : splash ? 0.022 : 0.028;
+  const sx = stream ? (kind === "milk" ? 0.07 : 0.05) : splash ? 0.03 : 0.022;
+  const sy = stream ? (kind === "milk" ? 0.18 : 0.15) : splash ? 0.03 : 0.034;
   s.scale.set(sx, sy, 1);
   s.position.set(x, y, z);
   s.userData = { vx, vy, vz, life, maxLife: life, kind, role, sx, sy };
@@ -536,7 +724,7 @@ function beginWet(kind) {
   const px = current.userData.pixel;
   if (current.userData.wet.mat) current.userData.wet.mat = null;
   const meshWet = current.children.find((c) => c.material && c.material.uniforms && c.material.uniforms.uKind);
-  if (meshWet) meshWet.material.uniforms.uKind.value = kind === "milk" || kind === "oil" ? 1 : 0;
+  if (meshWet) meshWet.material.uniforms.uKind.value = kind === "oil" ? 2 : kind === "milk" ? 1 : 0;
   wetSim = {
     kind,
     t: 0,
@@ -565,9 +753,9 @@ function stepWet(dt) {
   const front = wetSim.y0 + (W.h - 1 - wetSim.y0) * eased;
   const isMilk = wetSim.kind === "milk";
   const isOil = wetSim.kind === "oil";
-  const cr = isOil ? 92 : isMilk ? 246 : 130;
-  const cg = isOil ? 68 : isMilk ? 241 : 198;
-  const cb = isOil ? 28 : isMilk ? 228 : 220;
+  const cr = isOil ? 140 : isMilk ? 252 : 70;
+  const cg = isOil ? 100 : isMilk ? 244 : 196;
+  const cb = isOil ? 40 : isMilk ? 214 : 245;
   const buf = W.imgData.data;
   const alpha = W.alpha.data;
   const yStart = Math.max(0, wetSim.prev | 0);
@@ -581,7 +769,7 @@ function stepWet(dt) {
     const left = minX * 0.35 + mid * 0.65;
     const right = maxX * 0.35 + mid * 0.65;
     const xs = [cx, left, right];
-    const sig = [18, 11, 11];
+    const sig = [20, 12, 12];
     for (let x = minX; x <= maxX; x++) {
       const i = (y * W.w + x) * 4;
       if (alpha[i + 3] < 40) continue;
@@ -592,12 +780,12 @@ function stepWet(dt) {
       }
       if (inf < 0.08) continue;
       const fade = 0.6 + 0.4 * (1 - (y - wetSim.y0) / Math.max(1, W.h - wetSim.y0));
-      const add = inf * fade * (isMilk ? 140 : isOil ? 120 : 90);
+      const add = inf * fade * (isMilk ? 180 : isOil ? 150 : 150);
       buf[i] = Math.max(buf[i], cr);
       buf[i + 1] = Math.max(buf[i + 1], cg);
       buf[i + 2] = Math.max(buf[i + 2], cb);
-      buf[i + 3] = Math.min(160, buf[i + 3] + add);
-      if (Math.abs(x - cx) < 2) buf[i] = Math.min(255, buf[i] + 50);
+      buf[i + 3] = Math.min(235, buf[i + 3] + add);
+      if (Math.abs(x - cx) < 3) buf[i] = Math.min(255, buf[i] + 70);
     }
   }
   wetSim.prev = front;
@@ -620,6 +808,7 @@ function pour(kind) {
   kalash.rotation.set(0.05, 0.2, -0.12);
   kalash.visible = true;
   kalashAnim = { t: 0, hold, kind, top, emitting: false, emitAcc: 0, hits: 0 };
+  startRivulets(kind);
 }
 
 function arghya() {
@@ -680,10 +869,10 @@ function stepKalash(dt) {
       beginWet(kalashAnim.kind);
     }
     kalashAnim.emitAcc += dt;
-    const rate = reduced ? 0.04 : 0.016;
+    const rate = reduced ? 0.03 : 0.012;
     while (kalashAnim.emitAcc >= rate) {
       kalashAnim.emitAcc -= rate;
-      emitStream(kalashAnim.kind, spoutWorld(), kalashAnim.top, reduced ? 3 : 7);
+      emitStream(kalashAnim.kind, spoutWorld(), kalashAnim.top, reduced ? 5 : 11);
     }
   }
 }
@@ -746,32 +935,57 @@ function stepMist(dt) {
   }
 }
 
+function tilakTexture(kind, family) {
+  const c = document.createElement("canvas");
+  c.width = 64;
+  c.height = 64;
+  const ctx = c.getContext("2d");
+  const shiva = family === "shiva" || family === "shiva-lingam";
+  if (kind === "tilak" && shiva) {
+    ctx.fillStyle = "rgba(232,226,214,0.96)";
+    [20, 30, 40].forEach((y) => {
+      ctx.beginPath();
+      ctx.roundRect(8, y, 48, 6, 2);
+      ctx.fill();
+    });
+    ctx.fillStyle = "#c4452d";
+    ctx.beginPath();
+    ctx.arc(32, 33, 4.5, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (kind === "chandan") {
+    ctx.fillStyle = "rgba(232,208,154,0.96)";
+    ctx.beginPath();
+    ctx.ellipse(32, 32, 18, 13, 0, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.fillStyle = "#c4452d";
+    ctx.beginPath();
+    ctx.arc(32, 32, 13, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.needsUpdate = true;
+  return tex;
+}
+
 function stampMark(kind) {
   if (!current) return;
   const brow = current.userData.anchors.forehead;
-  if (kind === "tilak" && (current.userData.family === "shiva" || current.userData.family === "shiva-lingam")) {
-    [-0.016, 0, 0.016].forEach((dy) => {
-      const stripe = new THREE.Mesh(new THREE.PlaneGeometry(0.09, 0.012), mats.bhasma);
-      stripe.position.set(0, dy, 0.012);
-      brow.add(stripe);
-      marks.push(stripe);
-    });
-    const bindu = new THREE.Mesh(new THREE.CircleGeometry(0.011, 12), mats.kumkum);
-    bindu.position.set(0, 0, 0.014);
-    brow.add(bindu);
-    marks.push(bindu);
-    return;
-  }
-  const w = kind === "chandan" ? 0.05 : 0.028;
-  const h = kind === "chandan" ? 0.038 : 0.028;
-  const m = new THREE.Mesh(
-    new THREE.CircleGeometry(kind === "chandan" ? 0.028 : 0.016, 16),
-    kind === "chandan" ? mats.chandan : mats.kumkum,
-  );
-  m.scale.set(w / 0.028, h / 0.028, 1);
-  m.position.set(0, 0.006, 0.012);
-  brow.add(m);
-  marks.push(m);
+  const tex = tilakTexture(kind, current.userData.family);
+  const mat = new THREE.SpriteMaterial({
+    map: tex, transparent: true, depthTest: false, depthWrite: false, toneMapped: false,
+  });
+  mat.userData.localMat = true;
+  const s = new THREE.Sprite(mat);
+  const shiva = kind === "tilak" && (current.userData.family === "shiva" || current.userData.family === "shiva-lingam");
+  const pair = current.userData.pose === "pair";
+  const sx = shiva ? (pair ? 0.048 : 0.065) : kind === "chandan" ? 0.075 : 0.055;
+  const sy = shiva ? (pair ? 0.042 : 0.055) : kind === "chandan" ? 0.06 : 0.055;
+  s.scale.set(sx, sy, 1);
+  s.position.set(0, 0.004, 0.02);
+  s.renderOrder = 8;
+  brow.add(s);
+  marks.push(s);
 }
 
 function mark(kind) {
@@ -812,17 +1026,18 @@ function stepApplicator(dt) {
 }
 
 function leafMesh(kind) {
-  const isGrass = kind === "durva";
-  const isTulsi = kind === "tulsi";
-  const geo = isGrass
-    ? new THREE.PlaneGeometry(0.018, 0.09)
-    : new THREE.CircleGeometry(isTulsi ? 0.028 : 0.04, 5);
-  const matRef = mats.leaf.clone();
-  if (isTulsi) matRef.color = new THREE.Color(0x3d8b5a);
-  if (kind === "bilva") matRef.color = new THREE.Color(0x6a9a4a);
-  const p = new THREE.Mesh(geo, matRef);
+  ensureFxMats();
+  const map = leafMaps[kind] || leafMaps.flowers;
+  const mat = new THREE.SpriteMaterial({
+    map, transparent: true, depthWrite: false, toneMapped: false,
+  });
+  mat.userData.localMat = true;
+  const p = new THREE.Sprite(mat);
+  if (kind === "durva") p.scale.set(0.11, 0.11, 1);
+  else if (kind === "tulsi") p.scale.set(0.09, 0.09, 1);
+  else if (kind === "bilva") p.scale.set(0.12, 0.12, 1);
+  else p.scale.set(0.1, 0.08, 1);
   p.castShadow = false;
-  if (isGrass) p.rotation.z = (Math.random() - 0.5) * 0.6;
   return p;
 }
 
@@ -834,13 +1049,9 @@ function shower(kind) {
     : current.userData.anchors.crown;
   const top = worldOf(host);
   const n = reduced ? 8 : (kind === "tulsi" ? 16 : 18);
-  const isLeaf = kind === "bilva" || kind === "durva" || kind === "tulsi";
   const spread = atFeet ? 0.14 : 0.12;
   for (let i = 0; i < n; i++) {
-    const p = isLeaf
-      ? leafMesh(kind)
-      : mesh(new THREE.SphereGeometry(0.032, 8, 6), mats.petal);
-    if (!isLeaf) p.scale.set(0.7, 0.22, 1.1);
+    const p = leafMesh(kind === "bilva" || kind === "durva" || kind === "tulsi" ? kind : "flowers");
     p.position.set(
       top.x + (Math.random() - 0.5) * 0.28,
       (atFeet ? 1.2 : 2.05) + Math.random() * 0.18,
@@ -860,14 +1071,58 @@ function shower(kind) {
 }
 
 function incense() {
-  const n = reduced ? 8 : 16;
+  if (incenseStick) {
+    fxRoot.remove(incenseStick);
+    incenseStick = null;
+  }
+  ensureFxMats();
+  const g = new THREE.Group();
+  const wood = new THREE.MeshStandardMaterial({ color: 0x3a2414, roughness: 0.78, metalness: 0.04 });
+  const stick = mesh(new THREE.CylinderGeometry(0.013, 0.016, 0.52, 12), wood);
+  stick.rotation.z = 0.32;
+  stick.rotation.x = 0.12;
+  g.add(stick);
+  const holder = lathe(
+    [[0.0, 0], [0.045, 0.01], [0.05, 0.03], [0.03, 0.035], [0.0, 0.036]],
+    mats.gold,
+  );
+  holder.position.set(0.07, -0.22, 0);
+  g.add(holder);
+  const ember = new THREE.Mesh(
+    new THREE.SphereGeometry(0.02, 12, 10),
+    new THREE.MeshBasicMaterial({ color: 0xff4a10, toneMapped: false }),
+  );
+  ember.position.set(-0.078, 0.24, 0.02);
+  g.add(ember);
+  const tipGlow = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: radialTex([
+      [0, "rgba(255,230,140,1)"],
+      [0.35, "rgba(255,90,20,0.75)"],
+      [1, "rgba(255,40,0,0)"],
+    ], 64),
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false,
+  }));
+  tipGlow.scale.set(0.14, 0.14, 1);
+  tipGlow.position.copy(ember.position);
+  g.add(tipGlow);
+  const glow = new THREE.PointLight(0xff6a28, 1.1, 2.0);
+  glow.position.copy(ember.position);
+  g.add(glow);
+  g.position.set(0.58, 0.62, 0.92);
+  g.userData.ember = ember;
+  g.userData.tipGlow = tipGlow;
+  g.userData.t = 0;
+  fxRoot.add(g);
+  incenseStick = g;
+  const n = reduced ? 14 : 28;
+  const tip = ember.getWorldPosition(new THREE.Vector3());
   for (let i = 0; i < n; i++) {
-    const s = mesh(new THREE.SphereGeometry(0.03, 8, 8), mats.cream);
-    s.material = mats.cream.clone();
-    s.material.transparent = true;
-    s.material.opacity = 0.35;
-    s.position.set((Math.random() - 0.5) * 0.2, 0.55, 0.5);
-    s.userData = { life: 1.8 };
+    const s = new THREE.Sprite(wispMat.clone());
+    s.material.userData.localMat = true;
+    s.scale.set(0.05, 0.12, 1);
+    s.position.copy(tip);
+    s.material.opacity = 0;
+    s.userData = { life: 2.6 + Math.random() * 0.9, age: -i * 0.08, delay: i * 0.08 };
     fxRoot.add(s);
     smokes.push(s);
   }
@@ -906,31 +1161,24 @@ function flameSprite(sx, sy) {
 }
 
 function makeDiyaGroup() {
+  ensureFxMats();
   const g = new THREE.Group();
-  const bowl = lathe(
-    [[0.0, 0], [0.05, 0.008], [0.072, 0.03], [0.06, 0.04], [0.02, 0.042]],
-    mats.gold,
-  );
-  bowl.castShadow = false;
-  g.add(bowl);
-  if (diyaMap) {
-    const plane = new THREE.Mesh(
-      new THREE.PlaneGeometry(0.2, 0.17),
-      new THREE.MeshBasicMaterial({ map: diyaMap, transparent: true, depthWrite: false, toneMapped: false }),
-    );
-    plane.rotation.x = -1.05;
-    plane.position.set(0, 0.028, 0.01);
-    plane.userData.kind = "diyaPlane";
-    g.add(plane);
-  }
-  const flame = flameSprite(0.09, 0.16);
-  flame.position.set(0, 0.11, 0);
+  const lamp = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: diyaSpriteMap, transparent: true, depthWrite: false, toneMapped: false,
+  }));
+  lamp.scale.set(0.28, 0.35, 1);
+  lamp.position.set(0, 0.04, 0);
+  lamp.userData.kind = "diyaSprite";
+  g.add(lamp);
+  const flame = flameSprite(0.1, 0.16);
+  flame.position.set(0, 0.16, 0.01);
   g.add(flame);
-  const light = new THREE.PointLight(0xffb060, 1.05, 3.2);
-  light.position.set(0, 0.14, 0);
+  const light = new THREE.PointLight(0xffb060, 1.2, 3.4);
+  light.position.set(0, 0.16, 0.04);
   g.add(light);
   g.userData.flame = flame;
   g.userData.light = light;
+  g.userData.lamp = lamp;
   return g;
 }
 
@@ -1006,13 +1254,79 @@ function stepPetals(dt) {
   }
 }
 
+function startRivulets(kind) {
+  if (!current) return;
+  rivulets.forEach((r) => fxRoot.remove(r.sprite));
+  rivulets.length = 0;
+  ensureFxMats();
+  const from = worldOf(current.userData.anchors.crown);
+  const to = worldOf(current.userData.anchors.base || current.userData.anchors.feet);
+  const n = reduced ? 6 : 12;
+  const thick = kind === "milk" ? 0.11 : kind === "oil" ? 0.08 : 0.085;
+  const tall = kind === "milk" ? 0.34 : 0.28;
+  for (let i = 0; i < n; i++) {
+    const s = new THREE.Sprite(streakMatFor(kind).clone());
+    s.material.userData.localMat = true;
+    s.scale.set(thick, tall, 1);
+    s.position.copy(from);
+    s.visible = false;
+    s.renderOrder = 6;
+    fxRoot.add(s);
+    const xOff = (i / (n - 1) - 0.5) * 0.22;
+    rivulets.push({
+      sprite: s,
+      from: from.clone().add(new THREE.Vector3(xOff * 0.4, 0.02, 0.03)),
+      to: to.clone().add(new THREE.Vector3(xOff, 0.04, 0.05)),
+      t: -i * 0.09,
+      dur: kind === "milk" ? 2.1 : 1.55,
+      kind,
+    });
+  }
+}
+
+function stepRivulets(dt) {
+  for (let i = rivulets.length - 1; i >= 0; i--) {
+    const r = rivulets[i];
+    r.t += dt;
+    if (r.t < 0) continue;
+    r.sprite.visible = true;
+    const u = Math.min(1, r.t / r.dur);
+    const e = u * u * (3 - 2 * u);
+    r.sprite.position.lerpVectors(r.from, r.to, e);
+    r.sprite.position.x += Math.sin(e * 9 + i) * 0.012;
+    const fade = u > 0.75 ? 1 - (u - 0.75) / 0.25 : 1;
+    r.sprite.material.opacity = 0.9 * fade;
+    if (u >= 1) {
+      fxRoot.remove(r.sprite);
+      rivulets.splice(i, 1);
+    }
+  }
+}
+
 function stepSmoke(dt) {
+  const tip = incenseStick && incenseStick.userData.ember
+    ? incenseStick.userData.ember.getWorldPosition(_v).clone()
+    : null;
+  if (incenseStick) {
+    incenseStick.userData.t += dt;
+    const em = incenseStick.userData.ember;
+    if (em) em.scale.setScalar(1 + Math.sin(incenseStick.userData.t * 14) * 0.18);
+    if (incenseStick.userData.t > 4.2) {
+      fxRoot.remove(incenseStick);
+      incenseStick = null;
+    }
+  }
   for (let i = smokes.length - 1; i >= 0; i--) {
     const s = smokes[i];
-    s.position.y += 0.35 * dt;
-    s.scale.multiplyScalar(1 + dt * 0.8);
+    s.userData.age = (s.userData.age || 0) + dt;
+    if (s.userData.age < 0) continue;
+    if (tip && s.userData.age < 0.05) s.position.copy(tip);
+    s.position.y += 0.32 * dt;
+    s.position.x += Math.sin(s.userData.age * 2.4 + i) * 0.018 * dt * 8;
+    s.scale.x = 0.06 + s.userData.age * 0.03;
+    s.scale.y = 0.14 + s.userData.age * 0.12;
     s.userData.life -= dt;
-    s.material.opacity = Math.max(0, s.userData.life * 0.2);
+    s.material.opacity = Math.max(0, Math.min(0.5, s.userData.life * 0.22));
     if (s.userData.life <= 0) { fxRoot.remove(s); smokes.splice(i, 1); }
   }
 }
@@ -1093,6 +1407,7 @@ function loop(t) {
   stepWet(dt);
   stepApplicator(dt);
   stepPetals(dt);
+  stepRivulets(dt);
   stepSmoke(dt);
   stepAarti(dt);
   stepHalo(dt);
@@ -1109,6 +1424,9 @@ function loop(t) {
 function clearFx() {
   [...drops, ...petals, ...smokes, ...mists].forEach((o) => fxRoot.remove(o));
   drops.length = 0; petals.length = 0; smokes.length = 0; mists.length = 0;
+  rivulets.forEach((r) => fxRoot.remove(r.sprite));
+  rivulets.length = 0;
+  if (incenseStick) { fxRoot.remove(incenseStick); incenseStick = null; }
   marks.forEach((m) => { if (m.parent) m.parent.remove(m); });
   marks.length = 0;
   if (aartiLamp) { fxRoot.remove(aartiLamp); aartiLamp = null; }
